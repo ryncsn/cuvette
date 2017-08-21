@@ -1,20 +1,20 @@
 """
 Inspect a machine's CPU
 """
-from cuvette.inspectors import InspectorBase, flat_match
+from cuvette.inspectors.base import InspectorBase, flat_match, flat_filter
 from cuvette.machine import Machine
 
 
 VENDOR_ALIAS = [
-    ('GenuineIntel', 'intel', )
-    ('AMD', )
+    ('GenuineIntel', 'intel', ),
+    ('AMD', ),
     ('IBM', )
 ]
 
 
 MODEL_ALIAS = [
-    ('42', 'sandybridge', )
-    ('47', '44', '37', 'westmere', )
+    ('sandybridge', '42', ),
+    ('westmere', '47', '44', '37', )
 ]
 
 
@@ -37,6 +37,7 @@ class Inspector(InspectorBase):
         }
     }
 
+    @classmethod
     async def inspect(machine: Machine, conn):
         res = conn.exec('lscpu')
         res_dict = dict([
@@ -45,6 +46,12 @@ class Inspector(InspectorBase):
 
         machine['cpu.arch'] = res_dict['Architecture']
         machine['cpu.vendor'] = res_dict['Vendor ID']
-        machine['cpu.models'] = res_dict['42']
+        machine['cpu.model'] = res_dict['Model']
 
-    match = flat_match
+    @classmethod
+    def match(cls, query):
+        return flat_match(cls, query)
+
+    @classmethod
+    def create_filter(cls, query):
+        return flat_filter(cls, query)

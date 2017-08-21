@@ -1,19 +1,5 @@
 from aiohttp import web
-from motor.motor_asyncio import AsyncIOMotorClient
-
-# in the name of brevity we return stripped down html, this works fine on chrome but shouldn't be used in production
-# the <body> tag is required to activate aiohttp-debugtoolbar.
-BASE_PAGE = """\
-<title>{title}</title>
-<head>
-<link href="{styles_css_url}" rel="stylesheet">
-</head>
-<body>
-<main>
-  <h1>{title}</h1>
-  {content}
-</main>
-</body>"""
+from cuvette.pipeline import Pipeline
 
 
 async def index(request):
@@ -25,10 +11,25 @@ async def index(request):
     :param request: the request object see http://aiohttp.readthedocs.io/en/stable/web_reference.html#request
     :return: aiohttp.web.Response object
     """
-    ctx = dict(
-        title=request.app['name'],
-        styles_css_url=request.app['static_root_url'] + '/styles.css',
-        content="<p>Success! you've setup a basic aiohttp app.</p>",
-    )
     # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
-    return web.Response(text=BASE_PAGE.format(**ctx), content_type='text/html')
+    data = {
+        'text': 'Hello World!'
+    }
+    return web.json_response(data)
+
+
+class MachineView(object):
+    @staticmethod
+    async def get(request):
+        machines = await Pipeline(request).query(request.query)
+        if not machines:
+            machines = await Pipeline(request).provision(request.query)
+        if machines:
+            return web.json_response(machines)
+
+    @staticmethod
+    async def post(request):
+        data = {
+            'request': str(request)
+        }
+        return web.json_response(data)

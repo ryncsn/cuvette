@@ -6,13 +6,18 @@ every machine object stored in it is "in the pool"
 """
 from datetime import datetime
 from motor import motor_asyncio
+from motor.motor_asyncio import AsyncIOMotorCollection
 
-client = motor_asyncio.AsyncIOMotorClient()
+client = motor_asyncio.AsyncIOMotorClient()  # XXX
 
 db = client['testdatabase']  # XXX
 
 # Currently only one pool
 main_pool = db.machines
+provision_pool = db.provisioning_machines
+transform_pool = db.transforming_machines
+reserved_pool = db.reserved_machines
+failure_pool = db.failed_machines
 
 
 class Machine(dict):
@@ -51,7 +56,7 @@ class Machine(dict):
 
         # Right now Tasks could could only be an instance of
         # Provision / Transform / Reserve
-        self['tasks'] = []
+        self['tasks'] = {}
         self.update(kwargs)
 
         self._connection = None
@@ -60,14 +65,48 @@ class Machine(dict):
         """
         Filter used to get this object from mongodb pool
         """
-        return {'hostname': self['hostname']}
+        if self.get('_id'):
+            return {'_id': self['_id']}
+        elif self.get('magic'):
+            return {'magic': self['magic']}
+        elif self.get('hostname'):
+            return {'hostname': self['hostname']}
+        else:
+            raise RuntimeError("Invalid machine object {}".format(self))
 
-    async def save(self):
+    def to_json(self):
+        return dict((k, v) for k, v in self.items() if not k.startswith('_'))
+
+    @classmethod
+    def load(cls, res):
         """
-        Filter used to get this object from mongodb pool
+        Load from a object, like db result
         """
-        # Hostname is always required before save to pool
-        if await main_pool.update_one(self._ident(), self):
-            return self
-        await main_pool.insert_one(self)
-        self.update(await main_pool.find_one(self._ident()))
+        machine = cls()
+        machine.update(res)
+        return machine
+
+    async def save(self, pool: AsyncIOMotorCollection):
+        """
+        Save this machine to a pool
+        """
+        if pool is main_pool or pool is transform_pool:
+            assert self['hostname']
+        await pool.insert_one(self)
+        self.update(await pool.find_one(self._ident()))
+
+    async def delete(self):
+        """
+        Delete this machine from all pools
+        """
+        await main_pool.delete_one(self._ident())
+        await provision_pool.delete_one(self._ident())
+        await transform_pool.delete_one(self._ident())
+        await failure_pool.delete_one(self._ident())
+
+    async def move(self, pool: AsyncIOMotorCollection):
+        """
+        Move this machine to a pool
+        """
+        await self.delete()
+        await self.save(pool)

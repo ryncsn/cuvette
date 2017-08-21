@@ -7,7 +7,7 @@ class Required:
         self.v_type = v_type
 
 
-class Settings:
+class Settings(object):
     """
     Any setting defined here can be overridden by:
 
@@ -19,6 +19,10 @@ class Settings:
     Or, passing the custom setting as a keyword argument when initialising settings (useful when testing)
     """
     _ENV_PREFIX = 'APP_'
+
+    EXTRA_BEAKER_NS_MAP = {
+    }
+
     DB_NAME = Required(str)
     DB_USER = Required(str)
     DB_PASSWORD = Required(str)
@@ -65,3 +69,13 @@ class Settings:
                                    'you\'ll need to run `source activate.settings.sh` '
                                    'or you can set that single environment variable with '
                                    '`export {0}="<value>"`'.format(env_var_name))
+
+
+try:
+    from .settings_overlay import Settings as ExtraSettings
+    for name in dir(ExtraSettings):
+        if name.startswith('_'):
+            continue
+        setattr(Settings, name, getattr(ExtraSettings, name))
+except ImportError:
+    pass

@@ -4,7 +4,7 @@ Inspect a machine's CPU
 import logging
 
 from datetime import datetime
-from cuvette.inspectors import InspectorBase, flat_match
+from cuvette.inspectors.base import InspectorBase, flat_match, flat_filter
 from cuvette.machine import Machine
 
 
@@ -35,13 +35,20 @@ class Inspector(InspectorBase):
         },
     }
 
-    async def inspect(self, machine: Machine, conn):
+    @classmethod
+    async def inspect(cls, machine: Machine, conn):
         """
         This inspector won't detect anything as all properties should be provide by provisioner
         Else we have a broken provisioner.
         """
-        for prop in self.provide.keys():
+        for prop in cls.provide.keys():
             if machine.get(prop) is None:
                 logging.error("Illegal machine object found, missing prop '%s', content '%s'", prop, machine)
 
-    match = flat_match
+    @classmethod
+    def match(cls, query):
+        return flat_match(cls, query)
+
+    @classmethod
+    def create_filter(cls, query):
+        return flat_filter(cls, query)
