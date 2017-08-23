@@ -75,7 +75,15 @@ class Machine(dict):
             raise RuntimeError("Invalid machine object {}".format(self))
 
     def to_json(self):
-        return dict((k, v) for k, v in self.items() if not k.startswith('_'))
+        ret = {}
+        for key, value in self.items():
+            if key.startswith('_'):
+                continue
+            if isinstance(value, datetime):
+                ret[key] = value.isoformat()
+            else:
+                ret[key] = value
+        return ret
 
     @classmethod
     def load(cls, res):

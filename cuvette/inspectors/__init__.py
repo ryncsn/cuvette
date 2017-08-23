@@ -12,9 +12,14 @@ Inspectors = dict((k, v.Inspector) for k, v in load_all_sub_module(__name__).ite
 
 async def perform_check(machine: Machine):
     try:
-        with asyncssh.connect(machine['hostname']) as conn:
-            for ins in Inspectors:
-                ins.inspect(machine, conn)
+        async with asyncssh.connect(machine['hostname'],
+                                    known_hosts=None,
+                                    username='root') as conn:
+            # TODO: Disabled host key checking
+            # TODO: Accept password
+            # TODO: Accept username
+            for ins in Inspectors.values():
+                await ins.inspect(machine, conn)
     except (OSError, asyncssh.Error) as error:
         logging.exception('Failed inspecting machine %s with exception:', machine)
         machine.move(failure_pool)

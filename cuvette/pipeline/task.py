@@ -105,5 +105,5 @@ class ProvisionTask(BaseTask):
             await machine.save(provision_pool)
         await self.provisioner.provision(self.machines, sanitized_query)
         for machine in self.machines:
+            await perform_check(machine)
             await machine.move(main_pool)
-        perform_check(machine)

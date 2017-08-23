@@ -1,6 +1,7 @@
 import re
 import asyncio
 import logging
+import datetime
 
 from asyncio.subprocess import PIPE, STDOUT
 from cuvette.settings import Settings
@@ -154,7 +155,7 @@ async def parse_machine_info(recipe: str):
     system_tag_map.update(Settings.EXTRA_BEAKER_NS_MAP)
 
     ret['lifespan'] = DEFAULT_LIFE_SPAN
-    ret['start_time'] = recipe['start_time']
+    ret['start_time'] = datetime.datetime.strptime(recipe['start_time'], '%Y-%m-%d %H:%M:%S')
     ret['cpu-arch'] = recipe['arch']
     ret['beaker-distro'] = recipe['distro']
     ret['beaker-distro_family'] = recipe['family']

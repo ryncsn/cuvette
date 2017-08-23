@@ -38,11 +38,12 @@ class Inspector(InspectorBase):
     }
 
     @classmethod
-    async def inspect(machine: Machine, conn):
-        res = conn.exec('lscpu')
+    async def inspect(cls, machine: Machine, conn):
+        res = await conn.run('lscpu')
         res_dict = dict([
             (k.strip(), v.strip()) for k, v in
-            [line.split(':', 1) for line in res.splitlines()]])
+            [line.split(':', 1) for line in res.stdout.splitlines()]])
+        print(res_dict)
 
         machine['cpu-arch'] = res_dict['Architecture']
         machine['cpu-vendor'] = res_dict['Vendor ID']

@@ -161,8 +161,8 @@ def fill_distro_requires(root: Element, query: dict):
     requirements = ['distro_variant = Server']
     if query.get('cpu-arch'):
         requirements.append('distro_arch = ' + query.get('cpu-arch'))
-    if query.get('beaker.distro_name'):
-        requirements.append('distro_name = ' + query.get('beaker.distro_name'))
+    if query.get('beaker-distro'):
+        requirements.append('distro_name = ' + query.get('beaker-distro'))
 
     for requirement in requirements:
         key, op, value = requirement.split()

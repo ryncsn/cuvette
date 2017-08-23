@@ -44,11 +44,15 @@ class Magic(object):
 
         return None
 
-    async def mark_magic(self, machine: Machine):
+    async def prepare_provision(self, machine: Machine, query: dict):
         session = await get_session(self.request)
+
+        if query.get('magic') == 'noprovision':
+            return None
 
         magic = machine['magic'] = machine['magic'] or random_key()
         session['last_machine_magic'] = magic
+        return magic
 
     async def create_filter(self, params: dict):
         """

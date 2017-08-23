@@ -19,6 +19,9 @@ Transformers = transformers.Transformers
 Provisioners = provisioners.Provisioners
 
 
+DEFAULT_POOL_SIZE = 50
+
+
 def parse_url(http_args: dict):
     """
     Convert a HTTP Get URL into dict using custom rule.
@@ -186,8 +189,11 @@ class Pipeline(object):
         else return List[machine], False
         """
         machine = Machine()
-        await Magic(self.request).mark_magic(machine)
+
         query_params = parse_query(parse_url(data))
+
+        if not await Magic(self.request).prepare_provision(machine, query_params):
+            return {'message': 'no avaliable'}
 
         min_cost, min_cost_provisioner = float('inf'), None
 

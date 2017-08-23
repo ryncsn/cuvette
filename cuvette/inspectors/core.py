@@ -4,6 +4,7 @@ Inspect a machine's CPU
 import logging
 
 from datetime import datetime
+from datetime import timedelta
 from cuvette.inspectors.base import InspectorBase, flat_match, flat_filter
 from cuvette.machine import Machine
 
@@ -13,7 +14,7 @@ class Inspector(InspectorBase):
     Inspect machine's CPU
     """
     provide = {
-        "type": {
+        "system-type": {
             "type": str,
             "description": "Machine type, usually baremetal, vm or maybe container?"
         },
@@ -26,12 +27,22 @@ class Inspector(InspectorBase):
             "default_op": "$gte",
             "description": "How long this machine will be avaliable"
         },
-        "start_at": {
+        "start_time": {
             "type": datetime,
             "description": (
                 "When did the machine provisioned, used together with lifespan"
                 "to determine if it's expired or not"
             )
+        },
+        "expire_time": {
+            "type": datetime,
+            "description": (
+                "When this machine will be expired"
+            )
+        },
+        "lifetime": {
+            "type": int,
+            "description": "How lone a machine will be avaliable from now on, time in seconds"
         },
     }
 
@@ -41,7 +52,13 @@ class Inspector(InspectorBase):
         This inspector won't detect anything as all properties should be provide by provisioner
         Else we have a broken provisioner.
         """
+        if 'expire_time' not in machine.keys():
+            start_time = machine['start_time']
+            lifespan = machine['lifespan']
+            machine['expire_time'] = start_time + timedelta(seconds=lifespan)
         for prop in cls.provide.keys():
+            if prop in ['lifetime']:
+                continue
             if machine.get(prop) is None:
                 logging.error("Illegal machine object found, missing prop '%s', content '%s'", prop, machine)
 
@@ -50,5 +67,11 @@ class Inspector(InspectorBase):
         return flat_match(cls, query)
 
     @classmethod
-    def create_filter(cls, query):
-        return flat_filter(cls, query)
+    def create_filter(cls, query: dict):
+        ret = flat_filter(cls, query)
+        if 'lifetime' in query.keys():
+            del ret['lifetime']
+            ret['expire_time'] = {
+                '$gte': datetime.now() + timedelta(seconds=int(query['lifetime']))
+            }
+        return ret
