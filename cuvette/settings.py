@@ -2,6 +2,13 @@ import os
 from pathlib import Path
 
 
+DEFAULT_KS_APPEND = """
+%post
+# Fill your custom ks append here in cuvette
+%end
+"""
+
+
 class Required:
     def __init__(self, v_type=None):
         self.v_type = v_type
@@ -22,6 +29,13 @@ class Settings(object):
 
     EXTRA_BEAKER_NS_MAP = {
     }
+
+    BEAKER_JOB_DEFAULTS = {
+        'job-group': 'libvirt-ci',
+        'job-whiteboard': 'libvirt-ci-auto-cuvette',
+        'job-packages': ['libselinux-python', 'gmp-devel', 'xz-devel'],
+        'job-ksappend': DEFAULT_KS_APPEND
+    }  # TODO: Shouldn't be here, will move it to a better place later
 
     DB_NAME = Required(str)
     DB_USER = Required(str)

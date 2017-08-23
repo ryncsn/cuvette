@@ -3,25 +3,16 @@ Translate query dict into beaker xml
 Raise ValidateError if any query param is illegal
 """
 
-import logging
 from lxml import etree
 from xml.dom import minidom
 from xml.etree.ElementTree import Element
 
 from cuvette.provisioners.base import ValidateError
+from cuvette.settings import Settings
 
 
-DEFAULT_KS_APPEND = """
-%post
-# Fill your custom ks append here
-%end
-"""
+DEFAULTS = Settings.BEAKER_JOB_DEFAULTS
 
-DEFAULTS = {
-    'job-group': 'libvirt-ci',
-    'job-whiteboard': 'libvirt-ci-auto-cuvette',
-    'job-packages': ['libselinux-python', 'gmp-devel', 'xz-devel'],
-}
 
 ACCEPT_PARAMS = {
     'system-type': {
@@ -138,7 +129,7 @@ def fill_ks_appends(root: Element, sanitized_query: dict):
     Fill ks appends element for beaker job XML according to parameters
     """
     ks_append = etree.SubElement(root, 'ks_append')
-    ks_append.text = etree.CDATA(DEFAULT_KS_APPEND)
+    ks_append.text = etree.CDATA(DEFAULTS['job-ksappend'])
 
 
 def fill_repos(repos: Element, query: dict):
@@ -194,9 +185,9 @@ def fill_cpu(root: Element, sanitized_query: dict):
     }
 
     cpu_vendor_alias = {
-        ('amd', ): 'AuthenticAMD',
-        ('ibm', ): 'IBM',
-        ('intel', ): 'GenuineIntel',
+        'amd': 'AuthenticAMD',
+        'ibm': 'IBM',
+        'intel': 'GenuineIntel',
     }
 
     cpu_models = []
