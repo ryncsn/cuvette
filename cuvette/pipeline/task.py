@@ -102,6 +102,7 @@ class ProvisionTask(BaseTask):
     async def routine(self):
         sanitized_query = sanitize_query(self.query, self.provisioner.accept)
         for machine in self.machines:
+            machine['provisioner'] = self.provisioner.name
             await machine.save(provision_pool)
         await self.provisioner.provision(self.machines, sanitized_query)
         for machine in self.machines:
