@@ -14,6 +14,7 @@ from cuvette.machine import Machine
 from cuvette.machine import provision_pool, failure_pool, main_pool
 
 from cuvette.provisioners.base import sanitize_query
+from cuvette.inspectors import perform_check
 
 Tasks = {}
 
@@ -105,3 +106,4 @@ class ProvisionTask(BaseTask):
         await self.provisioner.provision(self.machines, sanitized_query)
         for machine in self.machines:
             await machine.move(main_pool)
+        perform_check(machine)

@@ -23,15 +23,15 @@ class Inspector(InspectorBase):
     Inspect machine's CPU
     """
     provide = {
-        "cpu.arch": {
+        "cpu-arch": {
             "type": str,
             "description": ""
         },
-        "cpu.vendor": {
+        "cpu-vendor": {
             "type": str,
             "description": "CPU Vendor, Intel, AMD, etc."
         },
-        "cpu.model": {
+        "cpu-model": {
             "type": str,
             "description": "CPU model, code name like sandybridge, westmer, or ID in integer"
         }
@@ -44,9 +44,9 @@ class Inspector(InspectorBase):
             (k.strip(), v.strip()) for k, v in
             [line.split(':', 1) for line in res.splitlines()]])
 
-        machine['cpu.arch'] = res_dict['Architecture']
-        machine['cpu.vendor'] = res_dict['Vendor ID']
-        machine['cpu.model'] = res_dict['Model']
+        machine['cpu-arch'] = res_dict['Architecture']
+        machine['cpu-vendor'] = res_dict['Vendor ID']
+        machine['cpu-model'] = res_dict['Model']
 
     @classmethod
     def match(cls, query):
