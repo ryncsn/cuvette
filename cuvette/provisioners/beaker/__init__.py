@@ -58,3 +58,9 @@ class Provisioner(ProvisionerBase):
         Trigger the provision with given query
         """
         raise NotImplementedError()
+
+    async def is_teareddown(machine: Machine, query: dict):
+        """
+        Trigger the provision with given query
+        """
+        raise NotImplementedError()

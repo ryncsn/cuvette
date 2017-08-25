@@ -5,19 +5,9 @@ Use MongoDB collection as the main machine ppol,
 every machine object stored in it is "in the pool"
 """
 from datetime import datetime
-from motor import motor_asyncio
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-client = motor_asyncio.AsyncIOMotorClient()  # XXX
-
-db = client['testdatabase']  # XXX
-
-# Currently only one pool
-main_pool = db.machines
-provision_pool = db.provisioning_machines
-transform_pool = db.transforming_machines
-reserved_pool = db.reserved_machines
-failure_pool = db.failed_machines
+from cuvette.pool import failure_pool, provision_pool, main_pool, transform_pool
 
 
 class Machine(dict):

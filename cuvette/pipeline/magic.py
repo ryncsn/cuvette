@@ -2,7 +2,8 @@ import json
 import uuid
 
 from aiohttp_session import get_session
-from cuvette.machine import provision_pool, failure_pool, main_pool, transform_pool, Machine
+from cuvette.machine import Machine
+from cuvette.pool import provision_pool, failure_pool, main_pool, transform_pool
 
 
 def random_key():

@@ -9,7 +9,8 @@ import cuvette.inspectors as inspectors
 import cuvette.transformers as transformers
 import cuvette.provisioners as provisioners
 
-from cuvette.machine import main_pool, Machine
+from cuvette.pool import main_pool
+from cuvette.machine import Machine
 from cuvette.pipeline.magic import Magic
 from cuvette.pipeline.task import ProvisionTask
 

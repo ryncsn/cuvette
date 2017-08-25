@@ -23,6 +23,10 @@ async def bkr_command(*args, input=None):
     return stdout.decode('utf8')
 
 
+async def cancel_beaker_job(job_id: str):
+    await bkr_command('job-cancel', job_id)
+
+
 def query_to_xml(query: dict) -> str:
     """
     Convert a query to XML that could be recognized by beaker
@@ -76,7 +80,7 @@ async def execute_beaker_job(job_xml: str):
         finally:
             if not success:
                 logging.error("Provisioning aborted abnormally. Cancellling beaker job %s", task_url)
-                await bkr_command('job-cancel', job_id)
+                await cancel_beaker_job(job_id)
 
 
 async def parse_machine_info(recipe: str):

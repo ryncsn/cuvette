@@ -11,7 +11,7 @@ import abc
 
 from concurrent.futures import ThreadPoolExecutor
 from cuvette.machine import Machine
-from cuvette.machine import provision_pool, failure_pool, main_pool
+from cuvette.pool import provision_pool, failure_pool, main_pool
 
 from cuvette.provisioners.base import sanitize_query
 from cuvette.inspectors import perform_check

@@ -1,5 +1,6 @@
 import base64
 import logging
+import asyncio
 
 from pathlib import Path
 from cryptography import fernet
@@ -8,17 +9,18 @@ from aiohttp import web
 from aiohttp_session import setup
 from aiohttp_session.cookie_storage import EncryptedCookieStorage
 
-from .settings import Settings
-from .views import index, MachineView
+from cuvette.settings import Settings
+from cuvette.pool import setup as pool_setup
+from cuvette.views import index, MachineView
 
 THIS_DIR = Path(__file__).parent
 BASE_DIR = THIS_DIR.parent
 
 
 async def startup(app: web.Application):
-    logging.basicConfig(level=logging.DEBUG)
+    logging.basicConfig(level=logging.INFO)
     logging.info("Cuvette starting...")
-    pass
+    pool_setup(asyncio.get_event_loop())
 
 
 async def cleanup(app: web.Application):

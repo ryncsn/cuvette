@@ -68,3 +68,10 @@ class ProvisionerBase(metaclass=abc.ABCMeta):
         Trigger the provision with given params
         """
         pass
+
+    @abc.abstractmethod
+    async def is_teareddown(params: dict):
+        """
+        Judge if a machine have been release by third part.
+        """
+        pass
