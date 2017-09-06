@@ -7,7 +7,7 @@ import logging
 from cuvette.provisioners.base import ValidateError, ProvisionerBase
 from cuvette.machine import Machine
 
-from .beaker import query_to_xml, execute_beaker_job, parse_machine_info
+from .beaker import query_to_xml, execute_beaker_job, parse_machine_info, cancel_beaker_job
 from .convertor import ACCEPT_PARAMS
 
 
@@ -43,7 +43,7 @@ class Provisioner(ProvisionerBase):
         Trigger the provision with given query
         """
         job_xml = query_to_xml(query)
-        task_id, recipes = await execute_beaker_job(job_xml)
+        job_id, recipes = await execute_beaker_job(job_xml)
         if not len(recipes) == len(machines):
             logging.error("Expecting {} machine(s), but got {} machine(s)".format(
                  len(machines), len(recipes),
@@ -51,15 +51,21 @@ class Provisioner(ProvisionerBase):
         for idx, recipe in enumerate(recipes):
             machine_info = await parse_machine_info(recipe)
             machines[idx].update(machine_info)
-            machines[idx].setdefault('beaker', {})['task_id'] = task_id
+            machines[idx].meta['beaker-job-id'] = job_id
 
-    async def teardown(machine: Machine, query: dict):
+    async def teardown(machines: typing.List[Machine], query: dict):
         """
-        Trigger the provision with given query
+        Teardown a machine provisioned from beaker,
+        If user have deployed some service need to be teared down,
+        they should teardown the service by themselves.
         """
-        raise NotImplementedError()
+        jobs = set()
+        for machine in machines:
+            jobs.add(machine.meta['beaker-job-id'])
+        for job in jobs:
+            await cancel_beaker_job(job)
 
-    async def is_teareddown(machine: Machine, query: dict):
+    async def is_teareddown(machine: Machine, meta: dict, query: dict):
         """
         Trigger the provision with given query
         """

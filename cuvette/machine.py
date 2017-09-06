@@ -27,6 +27,10 @@ class Machine(dict):
     async def setup(*_, **kwargs):
         return main_pool.create_index("hostname", unique=True)
 
+    @property
+    def meta(self):
+        return self['meta']
+
     def __init__(self,
                  hostname: str = None,
                  magic: str = None,
@@ -47,6 +51,7 @@ class Machine(dict):
         # Right now Tasks could could only be an instance of
         # Provision / Transform / Reserve
         self['tasks'] = {}
+        self['meta'] = {}
         self.update(kwargs)
 
         self._connection = None

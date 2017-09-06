@@ -8,6 +8,8 @@ from datetime import timedelta
 from cuvette.inspectors.base import InspectorBase, flat_match, flat_filter
 from cuvette.machine import Machine
 
+MAX_LIFESPAN = 1209600
+
 
 class Inspector(InspectorBase):
     """

@@ -1,4 +1,7 @@
 import abc
+import typing
+
+from cuvette.machine import Machine
 
 
 ALWAYS_GREEDY = True
@@ -56,21 +59,21 @@ class ProvisionerBase(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    async def provision(params: dict):
+    async def provision(machines: typing.List[Machine], meta: dict, query: dict):
         """
         Trigger the provision with given params
         """
         pass
 
     @abc.abstractmethod
-    async def teardown(params: dict):
+    async def teardown(machines: typing.List[Machine], meta: dict, query: dict):
         """
-        Trigger the provision with given params
+        Teardown a machine, this function might be called multiple time for a single machine
         """
         pass
 
     @abc.abstractmethod
-    async def is_teareddown(params: dict):
+    async def is_teareddown(machines: typing.List[Machine], meta: dict, query: dict):
         """
         Judge if a machine have been release by third part.
         """

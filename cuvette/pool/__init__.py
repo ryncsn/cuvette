@@ -1,6 +1,6 @@
 from .pools import main_pool, provision_pool, transform_pool, reserved_pool, failure_pool
 from .scheduler import setup as scheduler_setup, scheduler
-from .house_keeper import house_keeping
+from .house_keeper import house_keeping, HOUSE_KEEPING_FREQ
 
 __all__ = ['main_pool', 'provision_pool', 'transform_pool', 'reserved_pool',
            'failure_pool', 'setup']
@@ -8,4 +8,4 @@ __all__ = ['main_pool', 'provision_pool', 'transform_pool', 'reserved_pool',
 
 def setup(loop):
     scheduler_setup(loop)
-    scheduler.add_job(house_keeping, 'interval', seconds=10)
+    scheduler.add_job(house_keeping, 'interval', seconds=HOUSE_KEEPING_FREQ * 2)

@@ -280,7 +280,7 @@ def fill_host_requirements(host_requires: Element, sanitized_query: dict):
     for op, value in sanitized_query.get('disk-number', {}).items():
         add_requirement("NR_DISKS", op_map[op], value, is_extra=True)
 
-    for op, value in sanitized_query.get('numa-number', {}).items():
+    for op, value in sanitized_query.get('numa-node_number', {}).items():
         add_requirement("numa_node_count", op_map[op], value, is_extra=True)
 
     fill_cpu(and_op, sanitized_query)

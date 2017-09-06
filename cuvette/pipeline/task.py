@@ -9,6 +9,8 @@ import typing
 import uuid
 import abc
 
+import cuvette.provisioners as provisioner
+
 from concurrent.futures import ThreadPoolExecutor
 from cuvette.machine import Machine
 from cuvette.pool import provision_pool, failure_pool, main_pool
@@ -35,32 +37,41 @@ class BaseTask(metaclass=abc.ABCMeta):
     TYPE = 'base'
 
     def __init__(self, machines: typing.List[Machine], loop=None):
-        self.loop = loop
+        self.loop = loop or asyncio.get_event_loop()
         self.uuid = str(uuid.uuid1())
+        # Machines this task may related to, if task failed, all related machine will be
+        # moved to failure pool
         self.machines = machines
+        # If not None, a async task is running and when task.cancel() is called, this
+        # future is cancelled
         self.future = None
         self.status = 'pending'
 
         Tasks[self.uuid] = self
         for machine in self.machines:
-            machine['tasks'][self.uuid] = self.TYPE
+            machine['tasks'][self.uuid] = {
+                'type': self.TYPE,
+                'status': 'running'
+            }
 
-    def on_done(self):  # TODO
-        pass
+    async def on_done(self):
+        for machine in self.machines:
+            machine['tasks'].pop(self.uuid, None)
 
-    def on_success(self):  # TODO
-        pass
+    async def on_success(self):
+        logging.debug('Task {} Successed'.format(self))
 
-    def on_failure(self):  # TODO
-        pass
+    async def on_failure(self):
+        logging.exception("Machine {}, Task {}, encounterd exception:".format(self.machines, self))
+        self.status = 'failed'
+        for machine in self.machines:
+            await machine.move(failure_pool)
 
     def cancel(self):
-        try:
-            if self.future:
-                return self.future.cancel()
-        finally:
-            for machine in self.machines:
-                machine.move(failure_pool)
+        if self.future:
+            return self.future.cancel()
+        else:
+            pass
         return True
 
     async def run(self):
@@ -73,29 +84,35 @@ class BaseTask(metaclass=abc.ABCMeta):
         try:
             await self.future
         except Exception as error:
-            self.status = 'failed'
-            logging.exception("Machine {}, Task {}, encounterd exception:".format(self.machines, self))
+            await self.on_failure()
         else:
-            self.status = 'success'
-            return self.future.result()
+            await self.on_success()
         finally:
             if not self.future.cancelled():
+                logging.error('Coroutine leaked with {}'.format(self))
                 self.future.cancel()
             self.future = None
+            await self.on_done()
 
     @abc.abstractmethod
     async def routine(self, timeout=5):
+        """
+        The real task routine each subclass should implement
+        """
         pass
+
+    def __repr__(self):
+        return "<{} Task UUID:{}>".format(self.TYPE, self.uuid)
 
 
 class ProvisionTask(BaseTask):
     """
-    Used to keep tracking asyncio task so we can cancel it when we want.
+    The helper task to provision a machine
     """
     TYPE = 'provision'
 
-    def __init__(self, machines: typing.List[Machine], provisioner, query, loop=None):
-        super(ProvisionTask, self).__init__(machines, loop)
+    def __init__(self, machines: typing.List[Machine], provisioner, query, *args, **kwargs):
+        super(ProvisionTask, self).__init__(machines, *args, **kwargs)
         self.provisioner = provisioner
         self.query = query
 
@@ -108,3 +125,28 @@ class ProvisionTask(BaseTask):
         for machine in self.machines:
             await perform_check(machine)
             await machine.move(main_pool)
+
+
+class TeardownTask(BaseTask):
+    """
+    The helper task to teardown a machine
+    """
+    TYPE = 'teardown'
+
+    def __init__(self, machines: typing.List[Machine], *args, **kwargs):
+        super(TeardownTask, self).__init__(machines, *args, **kwargs)
+
+    async def routine(self):
+        sanitized_query = sanitize_query(self.query, self.provisioner.accept)
+        for machine in self.machines:
+            self.provisioner = provisioner.Provisioners[machine['provisioner']]
+            machine['provisioner'] = self.provisioner.name
+            await machine.save(provision_pool)
+        await self.provisioner.provision(self.machines, sanitized_query)
+        for machine in self.machines:
+            await perform_check(machine)
+            await machine.move(main_pool)
+
+    async def on_success(self):
+        for machine in self.machines:
+            await machine.delete()
