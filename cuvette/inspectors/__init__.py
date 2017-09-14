@@ -3,7 +3,7 @@ Inspectors
 """
 import logging
 import asyncssh
-from cuvette.utils import find_all_sub_module, load_all_sub_module
+from cuvette.utils import find_all_sub_module, load_all_sub_module, format_to_json, type_to_string
 from cuvette.pool import failure_pool
 from cuvette.machine import Machine
 
@@ -24,3 +24,19 @@ async def perform_check(machine: Machine):
     except (OSError, asyncssh.Error) as error:
         logging.exception('Failed inspecting machine %s with exception:', machine)
         machine.move(failure_pool)
+
+
+def get_all_parameters():
+    """
+    Return a dictionary descripting the parameters provided by all inspectors
+    """
+    ret = {}
+    for inspctor in Inspectors.values():
+        for key, value in inspctor.provide.items():
+            if key in ret.keys():
+                logging.warn('Found duplicated parameter %s', key)
+            ret[key] = value
+    return ret
+
+
+Parameters = format_to_json(get_all_parameters(), failover=type_to_string)

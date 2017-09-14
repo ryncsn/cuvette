@@ -1,5 +1,6 @@
 from aiohttp import web
 from cuvette.pipeline import Pipeline
+from cuvette.inspectors import Parameters
 
 
 async def index(request):
@@ -15,6 +16,20 @@ async def index(request):
     data = {
         'text': 'Hello World!'
     }
+    return web.json_response(data)
+
+
+async def parameters(request):
+    """
+    This is the view handler for the "/" url.
+
+    **Note: returning html without a template engine like jinja2 is ugly, no way around that.**
+
+    :param request: the request object see http://aiohttp.readthedocs.io/en/stable/web_reference.html#request
+    :return: aiohttp.web.Response object
+    """
+    # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
+    data = Parameters
     return web.json_response(data)
 
 

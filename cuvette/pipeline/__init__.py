@@ -189,7 +189,7 @@ class Pipeline(object):
         If provision is done within 5s, return List[machine], True
         else return List[machine], False
         """
-        # Currently, only provision one machine one time
+        # Currently, only return one machine one time
         machine = Machine()
 
         query_params = parse_query(parse_url(data))

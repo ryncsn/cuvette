@@ -11,7 +11,7 @@ from aiohttp_session.cookie_storage import EncryptedCookieStorage
 
 from cuvette.settings import Settings
 from cuvette.pool import setup as pool_setup
-from cuvette.views import index, MachineView
+from cuvette.views import index, parameters, MachineView
 
 THIS_DIR = Path(__file__).parent
 BASE_DIR = THIS_DIR.parent
@@ -29,6 +29,7 @@ async def cleanup(app: web.Application):
 
 def setup_routes(app):
     app.router.add_get('/', index, name='index')
+    app.router.add_get('/parameters', parameters, name='parameters')
     app.router.add_get('/machines', MachineView.get, name='machine_get')
     app.router.add_post('/machines', MachineView.post, name='machine_post')
 
