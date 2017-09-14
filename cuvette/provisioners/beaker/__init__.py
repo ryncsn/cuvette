@@ -5,7 +5,7 @@ import typing
 import logging
 
 from cuvette.provisioners.base import ValidateError, ProvisionerBase
-from cuvette.machine import Machine
+from cuvette.pool.machine import Machine
 
 from .beaker import query_to_xml, execute_beaker_job, parse_machine_info, cancel_beaker_job
 from .convertor import ACCEPT_PARAMS

@@ -1,9 +1,8 @@
-from .pools import main_pool, provision_pool, transform_pool, reserved_pool, failure_pool
+from .pools import main_pool, failure_pool
 from .scheduler import setup as scheduler_setup, scheduler
 from .house_keeper import house_keeping, HOUSE_KEEPING_FREQ
 
-__all__ = ['main_pool', 'provision_pool', 'transform_pool', 'reserved_pool',
-           'failure_pool', 'setup']
+__all__ = ['main_pool', 'failure_pool', 'setup']
 
 
 def setup(loop):

@@ -7,8 +7,6 @@ async def index(request):
     """
     This is the view handler for the "/" url.
 
-    **Note: returning html without a template engine like jinja2 is ugly, no way around that.**
-
     :param request: the request object see http://aiohttp.readthedocs.io/en/stable/web_reference.html#request
     :return: aiohttp.web.Response object
     """
@@ -22,8 +20,6 @@ async def index(request):
 async def parameters(request):
     """
     This is the view handler for the "/" url.
-
-    **Note: returning html without a template engine like jinja2 is ugly, no way around that.**
 
     :param request: the request object see http://aiohttp.readthedocs.io/en/stable/web_reference.html#request
     :return: aiohttp.web.Response object
@@ -41,10 +37,15 @@ class MachineView(object):
             machines = await Pipeline(request).provision(request.query)
         if machines:
             return web.json_response(machines)
+        else:
+            return web.json_response({
+                'message': 'Failed to find or provision a machine'
+            })
 
     @staticmethod
     async def post(request):
         data = {
+            'message': 'Not implemented, just return the request back',
             'request': str(request)
         }
         return web.json_response(data)

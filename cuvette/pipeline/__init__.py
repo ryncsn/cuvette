@@ -9,8 +9,7 @@ import cuvette.inspectors as inspectors
 import cuvette.transformers as transformers
 import cuvette.provisioners as provisioners
 
-from cuvette.pool import main_pool
-from cuvette.machine import Machine
+from cuvette.pool.machine import Machine
 from cuvette.pipeline.magic import Magic
 from cuvette.pipeline.task import ProvisionTask
 
@@ -164,6 +163,10 @@ class Pipeline(object):
         self.request = request
 
     async def query(self, data: dict):
+        """
+        Return if there is any machine matches required query or
+        return the already provisining machine.
+        """
         query_params = parse_query(parse_url(data))
 
         # Magic deal with the problem that browser keep sending request
@@ -177,7 +180,7 @@ class Pipeline(object):
             composed_filter.update(await magic.create_filter(query_params))
             for inspector in Inspectors.values():
                 composed_filter.update(inspector.create_filter(query_params))
-            machines = [Machine.load(m) for m in await main_pool.find(composed_filter).to_list(None)]
+            machines = [Machine.load(m) for m in await Machine.find_all(composed_filter)]
 
         if machines:
             return [m.to_json() for m in machines]
@@ -186,8 +189,8 @@ class Pipeline(object):
 
     async def provision(self, data: dict):
         """
-        If provision is done within 5s, return List[machine], True
-        else return List[machine], False
+        Wait if provision is done within 5s,
+        else run the task async.
         """
         # Currently, only return one machine one time
         machine = Machine()
@@ -197,12 +200,7 @@ class Pipeline(object):
         if not await Magic(self.request).prepare_provision(machine, query_params):
             return {'message': 'no avaliable'}
 
-        min_cost, min_cost_provisioner = float('inf'), None
-
-        for provisioner in Provisioners.values():
-            if provisioner.avaliable(query_params):
-                if provisioner.cost(query_params) < min_cost:
-                    min_cost_provisioner = provisioner
+        min_cost_provisioner = provisioners.find_avaliable(query_params)
 
         if min_cost_provisioner:
             provision_task = ProvisionTask([machine], min_cost_provisioner, query_params)
@@ -213,7 +211,8 @@ class Pipeline(object):
             else:
                 return [machine.to_json()]
         else:
-            return {'message': 'invalid request'}
+            return {'message': 'Failed to provision a machine, as no one machine matched your need, '
+                    'or there are zero machine.'}
 
     async def teardown(self, data: dict):
         raise NotImplementedError()

@@ -2,7 +2,7 @@
 Inspect a machine's CPU
 """
 from cuvette.inspectors.base import InspectorBase, flat_match, flat_filter
-from cuvette.machine import Machine
+from cuvette.pool.machine import Machine
 
 
 VENDOR_ALIAS = [

@@ -1,7 +1,7 @@
 import abc
 import typing
 
-from cuvette.machine import Machine
+from cuvette.pool.machine import Machine
 
 
 ALWAYS_GREEDY = True

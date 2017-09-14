@@ -2,8 +2,7 @@ import json
 import uuid
 
 from aiohttp_session import get_session
-from cuvette.machine import Machine
-from cuvette.pool import provision_pool, failure_pool, main_pool, transform_pool
+from cuvette.pool.machine import Machine
 
 
 def random_key():
@@ -33,19 +32,22 @@ class Magic(object):
         request_hash = hash(json.dumps(params, sort_keys=True))
         last_request_hash = session.setdefault('last_request', request_hash)
         last_machine_magic = session.get('last_machine_magic')
+
         if request_hash == last_request_hash and last_machine_magic:
-            machine = (
-                await provision_pool.find_one({'magic': last_machine_magic}) or
-                await failure_pool.find_one({'magic': last_machine_magic}) or
-                await main_pool.find_one({'magic': last_machine_magic}) or
-                await transform_pool.find_one({'magic': last_machine_magic})
-            )
-            if machine:
-                return [Machine.load(machine)]
+            query = {
+                'magic': last_machine_magic
+            }
+            machines = await Machine.find_all(query)
+            if machines:
+                return machines
 
         return None
 
     async def prepare_provision(self, machine: Machine, query: dict):
+        """
+        Before provision, checking if provision is allowed and if allowed
+        remember the current provision parameters (use hash).
+        """
         session = await get_session(self.request)
 
         if query.get('magic') == 'noprovision':

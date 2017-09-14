@@ -6,7 +6,7 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 from cuvette.inspectors.base import InspectorBase, flat_match, flat_filter
-from cuvette.machine import Machine
+from cuvette.pool.machine import Machine
 
 MAX_LIFESPAN = 1209600
 

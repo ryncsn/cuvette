@@ -4,7 +4,7 @@ Base classed and helper for inspectors
 import abc
 import logging
 
-from cuvette.machine import Machine
+from cuvette.pool.machine import Machine
 from asyncssh.connection import SSHConnection
 
 
