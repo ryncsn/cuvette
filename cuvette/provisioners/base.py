@@ -42,6 +42,9 @@ def sanitize_query(query: dict, accept_params: dict):
 class ProvisionerBase(metaclass=abc.ABCMeta):
     name = abc.abstractproperty()
     accept = abc.abstractproperty()
+    """
+    What parameters this provisioner accepts
+    """
 
     @abc.abstractmethod
     def avaliable(params: dict):

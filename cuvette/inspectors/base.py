@@ -10,6 +10,9 @@ from asyncssh.connection import SSHConnection
 
 class InspectorBase(metaclass=abc.ABCMeta):
     provide = abc.abstractproperty()
+    """
+    What parameters are provided by this Inspector
+    """
 
     @abc.abstractmethod
     async def inspect(machine: Machine, conn: SSHConnection):
