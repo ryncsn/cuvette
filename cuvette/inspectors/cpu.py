@@ -43,7 +43,6 @@ class Inspector(InspectorBase):
         res_dict = dict([
             (k.strip(), v.strip()) for k, v in
             [line.split(':', 1) for line in res.stdout.splitlines()]])
-        print(res_dict)
 
         machine['cpu-arch'] = res_dict['Architecture']
         machine['cpu-vendor'] = res_dict['Vendor ID']

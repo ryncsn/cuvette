@@ -54,6 +54,17 @@ class Inspector(InspectorBase):
         This inspector won't detect anything as all properties should be provide by provisioner
         Else we have a broken provisioner.
         """
+        res = await conn.run('cat /proc/cpuinfo')
+
+        res_dict = dict([
+            (k.strip(), v.strip()) for k, v in
+            [line.split(':', 1) for line in res.stdout.splitlines()]])
+
+        if 'hypervisor' in res_dict.get('flags', ''):
+            if machine.setdefault('system-type', 'vm') == 'baremetal':
+                logging.error('Machine %s seems to be an virtual machine but provisioner marked it as '
+                              'baremetal!', machine['hostname'])
+
         if 'expire_time' not in machine.keys():
             start_time = machine['start_time']
             lifespan = machine['lifespan']
