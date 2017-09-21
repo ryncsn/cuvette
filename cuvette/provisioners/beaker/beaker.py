@@ -185,4 +185,8 @@ async def parse_machine_info(recipe: str):
                 logging.error('Expectin only one element for %s, got multiple.', tag)
             ret[key] = type_(values[0].text)
 
+    system_type = ret.get('system-type')
+    if not system_type:
+        ret['system_type'] = 'baremetal'
+
     return ret

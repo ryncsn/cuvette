@@ -257,7 +257,7 @@ def fill_host_requirements(host_requires: Element, sanitized_query: dict):
         require.set("op", op)
         require.set("value", str(value))
 
-    if sanitized_query.get('system-type') == 'baremetal':
+    if sanitized_query.get('system-type', 'baremetal') == 'baremetal':
         add_requirement('hypervisor', '=', '')
     else:
         raise ValidateError('System type other that baremetal is not supported yet.')
