@@ -92,7 +92,7 @@ class Machine(dict):
             raise RuntimeError("Invalid machine object {}".format(self))
 
     def self_check(self):
-        if not self['status'] in {'new', 'preparing', 'teardown', 'ready', 'failed', }:
+        if not self['status'] in {'new', 'preparing', 'teardown', 'ready', 'failed', 'deleted'}:
             raise RuntimeError('Invalid machine status {}'.format(self['status']))
         if self['status'] in {'teardown', 'reserved', 'ready', }:
             if not self['hostname']:
@@ -122,6 +122,7 @@ class Machine(dict):
         """
         Delete this machine from all pools
         """
+        self['status'] = 'deleted'
         await main_pool.delete_one(self._ident())
         await failure_pool.delete_one(self._ident())
 
