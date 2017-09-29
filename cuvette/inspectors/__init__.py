@@ -7,6 +7,8 @@ from cuvette.utils import find_all_sub_module, load_all_sub_module, format_to_js
 from cuvette.pool import failure_pool
 from cuvette.pool.machine import Machine
 
+logger = logging.getLogger(__name__)
+
 __all__ = find_all_sub_module(__file__, exclude=['base'])
 Inspectors = dict((k, v.Inspector) for k, v in load_all_sub_module(__name__).items())
 
@@ -22,7 +24,7 @@ async def perform_check(machine: Machine):
             for ins in Inspectors.values():
                 await ins.inspect(machine, conn)
     except (OSError, asyncssh.Error) as error:
-        logging.exception('Failed inspecting machine %s with exception:', machine)
+        logger.exception('Failed inspecting machine %s with exception:', machine)
         machine.move(failure_pool)
 
 
@@ -34,7 +36,7 @@ def get_all_parameters():
     for inspctor in Inspectors.values():
         for key, value in inspctor.provide.items():
             if key in ret.keys():
-                logging.warn('Found duplicated parameter %s', key)
+                logger.warn('Found duplicated parameter %s', key)
             ret[key] = value
     return ret
 

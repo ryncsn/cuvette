@@ -17,6 +17,8 @@ from cuvette.pool.machine import Machine
 from cuvette.provisioners.base import sanitize_query
 from cuvette.inspectors import perform_check
 
+logger = logging.getLogger(__name__)
+
 Tasks = {}
 
 
@@ -54,17 +56,17 @@ class BaseTask(metaclass=abc.ABCMeta):
             }
 
     async def on_start(self):
-        logging.debug('Task {} Started.'.format(self))
+        logger.debug('Task {} Started.'.format(self))
 
     async def on_done(self):
         for machine in self.machines:
             machine['tasks'].pop(self.uuid, None)
 
     async def on_success(self):
-        logging.debug('Task {} Successed.'.format(self))
+        logger.debug('Task {} Successed.'.format(self))
 
     async def on_failure(self):
-        logging.exception("Machine {}, Task {}, encounterd exception:".format(self.machines, self))
+        logger.exception("Machine {}, Task {}, encounterd exception:".format(self.machines, self))
         self.cancel()
         self.status = 'failed'
         for machine in self.machines:
@@ -94,7 +96,7 @@ class BaseTask(metaclass=abc.ABCMeta):
             await self.on_success()
         finally:
             if not self.future.cancelled() and not self.future.done():
-                logging.error('Coroutine leaked with {}'.format(self))
+                logger.error('Coroutine leaked with {}'.format(self))
                 self.future.cancel()
             self.future = None
             await self.on_done()

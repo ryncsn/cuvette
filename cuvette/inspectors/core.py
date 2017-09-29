@@ -11,6 +11,9 @@ from cuvette.pool.machine import Machine
 MAX_LIFESPAN = 1209600
 
 
+logger = logging.getLogger(__name__)
+
+
 class Inspector(InspectorBase):
     """
     Inspect machine's CPU
@@ -62,8 +65,8 @@ class Inspector(InspectorBase):
 
         if 'hypervisor' in res_dict.get('flags', ''):
             if machine.setdefault('system-type', 'vm') == 'baremetal':
-                logging.error('Machine %s seems to be an virtual machine but provisioner marked it as '
-                              'baremetal!', machine['hostname'])
+                logger.error('Machine %s seems to be an virtual machine but provisioner marked it as '
+                             'baremetal!', machine['hostname'])
 
         if 'expire_time' not in machine.keys():
             start_time = machine['start_time']
@@ -73,7 +76,7 @@ class Inspector(InspectorBase):
             if prop in ['lifetime']:
                 continue
             if machine.get(prop) is None:
-                logging.error("Illegal machine object found, missing prop '%s', content '%s'", prop, machine)
+                logger.error("Illegal machine object found, missing prop '%s', content '%s'", prop, machine)
 
     @classmethod
     def match(cls, query):

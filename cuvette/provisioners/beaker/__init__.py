@@ -10,6 +10,8 @@ from cuvette.pool.machine import Machine
 from .beaker import query_to_xml, execute_beaker_job, parse_machine_info, cancel_beaker_job
 from .convertor import ACCEPT_PARAMS
 
+logger = logging.getLogger(__name__)
+
 
 class Provisioner(ProvisionerBase):
     name = 'beaker'
@@ -45,7 +47,7 @@ class Provisioner(ProvisionerBase):
         job_xml = query_to_xml(query)
         job_id, recipes = await execute_beaker_job(job_xml)
         if not len(recipes) == len(machines):
-            logging.error("Expecting {} machine(s), but got {} machine(s)".format(
+            logger.error("Expecting {} machine(s), but got {} machine(s)".format(
                  len(machines), len(recipes),
             ))
         for idx, recipe in enumerate(recipes):

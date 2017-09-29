@@ -6,6 +6,8 @@ from cuvette.utils import find_all_sub_module, load_all_sub_module
 from cuvette.inspectors import Parameters as InspectorParameters
 from .base import sanitize_query, ValidateError  # noqa
 
+logger = logging.getLogger(__name__)
+
 __all__ = find_all_sub_module(__file__, exclude=['base'])
 Provisioners = dict((k, v.Provisioner) for k, v in load_all_sub_module(__name__).items())
 
@@ -31,8 +33,8 @@ def check_parameters():
         for param_name, param_meta in provisioner.accept.items():
             inspected_param_meta = InspectorParameters.get(param_name)
             if not inspected_param_meta:
-                logging.error('Parameter "%s" of provisioner "%s" is not inspected by any inspector',
-                              param_name, provisioner.name)
+                logger.error('Parameter "%s" of provisioner "%s" is not inspected by any inspector',
+                             param_name, provisioner.name)
 
 
 check_parameters()

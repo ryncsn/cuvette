@@ -21,6 +21,9 @@ Transformers = transformers.Transformers
 Provisioners = provisioners.Provisioners
 
 
+logger = logging.getLogger(__name__)
+
+
 DEFAULT_POOL_SIZE = 50
 
 
@@ -48,7 +51,7 @@ class Pipeline(object):
         for key, value in query_params.items():
             if key not in InspectorsParameters:
                 composed_filter[key] = value
-                logging.warn('Passing through parameter "%s", as no inspector for it', key)
+                logger.warn('Passing through parameter "%s", as no inspector for it', key)
 
         return [Machine(m) for m in await Machine.find_all(composed_filter)]
 
@@ -65,6 +68,7 @@ class Pipeline(object):
         min_cost_provisioner = provisioners.find_avaliable(query_params)
 
         if min_cost_provisioner:
+            logger.debug('Selected provisioner %s to provision new machine', min_cost_provisioner.name)
             provision_task = ProvisionTask([machine], min_cost_provisioner, query_params)
             finished, pending = await asyncio.wait([provision_task.run()], timeout=timeout)
             if finished:
@@ -99,7 +103,7 @@ class Pipeline(object):
                 for task_uuid, task_meta in machine.tasks.items():
                     task = Tasks.get(task_uuid)
                     if not task:
-                        logging.error('Dead task {} dropped'.format(task_uuid))
+                        logger.error('Dead task {} dropped'.format(task_uuid))
                     else:
                         task.cancel()
             Provisioners[provisioner].teardown(machines)

@@ -7,6 +7,8 @@ import logging
 from cuvette.pool.machine import Machine
 from asyncssh.connection import SSHConnection
 
+logger = logging.getLogger(__name__)
+
 
 class InspectorBase(metaclass=abc.ABCMeta):
     provide = abc.abstractproperty()
@@ -78,7 +80,7 @@ def flat_match(cls: InspectorBase, machine: Machine, query: dict):
         if prop not in query.keys():
             continue
         if prop not in machine.keys():
-            logging.error("Machine don't have prop %s, machine content %s", prop, machine)
+            logger.error("Machine don't have prop %s, machine content %s", prop, machine)
             continue
 
         # op is None for plain value
@@ -88,7 +90,7 @@ def flat_match(cls: InspectorBase, machine: Machine, query: dict):
             op = op or meta.get('default_op', 'eq')
 
             if OPERATE_MAP.get(op) is None:
-                logging.error('Unknown operation: "%s"', query[prop][0])
+                logger.error('Unknown operation: "%s"', query[prop][0])
             elif OPERATE_MAP.get(op)(machine['prop'], query[prop][1]) is False:
                 return False
 
