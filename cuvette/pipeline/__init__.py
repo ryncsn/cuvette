@@ -13,32 +13,70 @@ import cuvette.provisioners as provisioners
 
 from cuvette.pool.machine import Machine
 from cuvette.pipeline.task import ProvisionTask, Tasks
+from cuvette.utils import format_to_json, type_to_string
 
 
 Inspectors = inspectors.Inspectors
 InspectorsParameters = inspectors.Parameters
-Transformers = transformers.Transformers
 Provisioners = provisioners.Provisioners
+ProvisionersParameters = provisioners.Parameters
+Transformers = transformers.Transformers
 
 
 logger = logging.getLogger(__name__)
 
 
+def setup_parameters():
+    """
+    Check and setup parameters that could be accept
+    """
+    for provisioner in Provisioners.values():
+        for param_name, param_meta in provisioner.accept.items():
+            inspecter_param_meta = InspectorsParameters.get(param_name)
+            if not inspecter_param_meta:
+                logger.error('Parameter "%s" of provisioner "%s" is not inspected by any inspector',
+                             param_name, provisioner.name)
+                InspectorsParameters[param_name] = param_meta.copy()
+                InspectorsParameters[param_name]['source'] = {
+                    'type': 'provisioner',
+                    'name': param_name
+                }
+            else:
+                KEYS_TO_CHECK = ['type']
+                for key in KEYS_TO_CHECK:
+                    if inspecter_param_meta.get(key) != param_meta.get(key):
+                        logger.error('Different declaration for %s\n'
+                                     'inspectors give:\n %s\n'
+                                     'provisioner %s gives:\n %s\n',
+                                     param_name, inspecter_param_meta, provisioner.name, param_meta)
+                        break
+
+
+Parameters = setup_parameters()
+
+
 DEFAULT_POOL_SIZE = 50
 
 
-def PipelineException(Exception):
+def format_parameters(parameters: dict):
+    return format_to_json(parameters, failover=type_to_string)
+
+
+class PipelineException(Exception):
     pass
 
 
 class Pipeline(object):
     """
-    When a request comes to pipeline, a pipeline object is created.
+    Do the most common operation, provision, reserve, teardown
     """
     def __init__(self, request):
+        """
+        Wrap a request object with pipeline
+        """
         self.request = request
 
-    async def query(self, query_params: dict):
+    async def query(self, request, query_params: dict):
         """
         Return if there is any machine matches required query or
         return the already provisining machine.

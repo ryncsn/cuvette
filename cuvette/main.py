@@ -38,6 +38,7 @@ def setup_routes(app):
     app.router.add_post('/machines', MachineView.post, name='machine_post')
     app.router.add_delete('/machines', MachineView.delete, name='machine_delete')
     app.router.add_get('/machines/request', MachineView.request, name='machine_request')
+    app.router.add_post('/machines/request', MachineView.request, name='machine_request_post')
     app.router.add_post('/machines/provision', MachineView.provision, name='machine_provision')
     app.router.add_post('/machines/teardown', MachineView.provision, name='machine_teardown')
 

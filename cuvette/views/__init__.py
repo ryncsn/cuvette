@@ -90,7 +90,10 @@ class MachineView(object):
         A blocking machine request API, return until timeout (with 301) or there is a valid machine
         useful for clients that only wants a machine and nothing else.
         """
-        query_params = parse_query(parse_request_params(request.query))
+        if request.method == 'GET':
+            query_params = parse_query(parse_request_params(request.query))
+        elif request.method == 'POST':
+            query_params = parse_query(await request.json())
 
         machines = await request['magic'].pre_query(query_params)
         if not machines:

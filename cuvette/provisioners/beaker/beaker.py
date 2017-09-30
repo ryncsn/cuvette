@@ -123,7 +123,7 @@ async def parse_machine_info(recipe: str):
             'type': int,
         },
         '{}cpuFlag'.format(NS_INV): {
-            'name': 'cpu-flag',
+            'name': 'cpu-flags',
             'type': list,
         },
         '{}cpuStepping'.format(NS_INV): {

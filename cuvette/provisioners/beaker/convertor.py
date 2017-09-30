@@ -28,8 +28,14 @@ ACCEPT_PARAMS = {
         'ops': [None],
     },
     'cpu-model': {
+        'type': str,
         'descript': 'CPU model',
         'ops': ['$eq', '$in'],
+    },
+    'cpu-flags': {
+        'descript': 'CPU Flase need to be supported',
+        'type': list,
+        'ops': [None]
     },
     'memory-total_size': {
         'type': int,
@@ -49,10 +55,6 @@ ACCEPT_PARAMS = {
         'type': int,
         'ops': ['$eq', '$lt', '$gt', '$lte', '$gte'],
     },
-    '1g_hugepage': {
-        'type': bool,
-        'ops': [None],
-    },
     'hvm': {
         'type': bool,
         'ops': [None],
@@ -65,7 +67,7 @@ ACCEPT_PARAMS = {
         'type': bool,
         'ops': [None],
     },
-    'extra_drivers': {
+    'device_drivers': {
         'type': list,
         'ops': [None],
     },
@@ -221,8 +223,8 @@ def fill_cpu(root: Element, sanitized_query: dict):
 
 def fill_devices(root: Element, sanitized_query: dict):
     device_drivers = []
-    if sanitized_query.get('extra_drivers'):
-        device_drivers = sanitized_query.get('extra_drivers')
+    if sanitized_query.get('device_drivers'):
+        device_drivers = sanitized_query.get('device_drivers')
     if sanitized_query.get('npiv'):
         device_drivers = ['igb', 'ixgbe', 'be2net', 'mlx4_core', 'enic']
     if sanitized_query.get('sriov'):
@@ -268,8 +270,8 @@ def fill_host_requirements(host_requires: Element, sanitized_query: dict):
     for op, value in sanitized_query.get('memory.total_size', {}).items():
         add_requirement('memory', op_map[op], value)
 
-    if sanitized_query.get('1g_hugepage'):
-        add_requirement('CPUFLAGS', '=', 'pdpe1gb', is_extra=True)
+    for flag in sanitized_query.get('cpu-flags', []):
+        add_requirement('CPUFLAGS', '=', flag, is_extra=True)
 
     if sanitized_query.get('hvm'):
         add_requirement('HVM', '=', '1', is_extra=True)

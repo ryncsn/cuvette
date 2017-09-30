@@ -52,7 +52,7 @@ class Inspector(InspectorBase):
     }
 
     @classmethod
-    async def inspect(cls, machine: Machine, conn):
+    async def inspect(self: InspectorBase, machine: Machine, conn):
         """
         This inspector won't detect anything as all properties should be provide by provisioner
         Else we have a broken provisioner.

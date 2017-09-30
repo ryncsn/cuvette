@@ -11,7 +11,8 @@ def setup(loop):
             return True
 
     # Suppress logging for now
-    logging.getLogger("apscheduler.scheduler").addFilter(NoLogging())
+    logging.getLogger("apscheduler").setLevel(logging.ERROR)
+    logging.getLogger("apscheduler").addFilter(NoLogging())
 
     scheduler.configure({
         'event_loop': loop,

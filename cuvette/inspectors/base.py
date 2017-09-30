@@ -15,9 +15,14 @@ class InspectorBase(metaclass=abc.ABCMeta):
     """
     What parameters are provided by this Inspector
     """
+    def __init__(self):
+        """
+        Do some self check or setup code here.
+        """
+        pass
 
     @abc.abstractmethod
-    async def inspect(machine: Machine, conn: SSHConnection):
+    async def inspect(self, machine: Machine, conn: SSHConnection):
         """
         Inspact a machine with given ssh connection
 
@@ -27,7 +32,7 @@ class InspectorBase(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def match(machine: Machine, query: dict):
+    def match(self, machine: Machine, query: dict):
         """
         Judge if one machine matches the query.
 
@@ -59,11 +64,38 @@ class InspectorBase(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def create_filter(query: dict):
+    def hard_filter(self, query: dict):
+        """
+        Filter out machines by hard limits,
+
+        This should return a mongodb query which filters all machine
+        don't meet and CAN'T be transformed to meet the query condition.
+        """
+        pass
+
+    @abc.abstractmethod
+    def soft_filter(self, query: dict):
+        """
+        Filter out machines by hard limits,
+
+        This should return a mongodb query which filters all machine
+        don't meet but CAN be transformed to meet the query condition.
+        """
+        pass
+
+    @abc.abstractmethod
+    def provision_filter(self, query: dict):
+        """
+        Create a filter that will be acceptaced by provisioners
+
+        Inspectors will do some extra job to preprocess the query for provisioners
+        Eg. query contains key 'hugepage' = True, will be turn into a extra cpu flag
+        before passing to provisioner.
+        """
         pass
 
 
-def flat_match(cls: InspectorBase, machine: Machine, query: dict):
+def flat_match(self: InspectorBase, machine: Machine, query: dict):
     """
     Flat compare, this could be used as a helper.
     """
@@ -76,7 +108,7 @@ def flat_match(cls: InspectorBase, machine: Machine, query: dict):
         '$gte': lambda x, val: x >= val,
     }
 
-    for prop, meta in cls.provide.items():
+    for prop, meta in self.provide.items():
         if prop not in query.keys():
             continue
         if prop not in machine.keys():
@@ -97,14 +129,16 @@ def flat_match(cls: InspectorBase, machine: Machine, query: dict):
     return True
 
 
-def flat_filter(cls: InspectorBase, query: dict):
+def flat_filter(self: InspectorBase, query: dict):
     """
     Flat filter, this could be used as a helper.
     Just passthrough the filter.
     """
     ret = {}
 
-    for prop, meta in cls.provide.items():
+    # TODO: op, default_op, default_value
+
+    for prop, meta in self.provide.items():
         if prop not in query.keys():
             # TODO: default value?
             continue

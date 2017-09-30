@@ -3,7 +3,8 @@ Inspectors
 """
 import logging
 import asyncssh
-from cuvette.utils import find_all_sub_module, load_all_sub_module, format_to_json, type_to_string
+
+from cuvette.utils import find_all_sub_module, load_all_sub_module
 from cuvette.pool import failure_pool
 from cuvette.pool.machine import Machine
 
@@ -11,21 +12,6 @@ logger = logging.getLogger(__name__)
 
 __all__ = find_all_sub_module(__file__, exclude=['base'])
 Inspectors = dict((k, v.Inspector) for k, v in load_all_sub_module(__name__).items())
-
-
-async def perform_check(machine: Machine):
-    try:
-        async with asyncssh.connect(machine['hostname'],
-                                    known_hosts=None,
-                                    username='root') as conn:
-            # TODO: Disabled host key checking
-            # TODO: Accept password
-            # TODO: Accept username
-            for ins in Inspectors.values():
-                await ins.inspect(machine, conn)
-    except (OSError, asyncssh.Error) as error:
-        logger.exception('Failed inspecting machine %s with exception:', machine)
-        machine.move(failure_pool)
 
 
 def get_all_parameters():
@@ -41,4 +27,19 @@ def get_all_parameters():
     return ret
 
 
-Parameters = format_to_json(get_all_parameters(), failover=type_to_string)
+Parameters = get_all_parameters()
+
+
+async def perform_check(machine: Machine):
+    try:
+        async with asyncssh.connect(machine['hostname'],
+                                    known_hosts=None,
+                                    username='root') as conn:
+            # TODO: Disabled host key checking
+            # TODO: Accept password
+            # TODO: Accept username
+            for ins in Inspectors.values():
+                await ins.inspect(machine, conn)
+    except (OSError, asyncssh.Error) as error:
+        logger.exception('Failed inspecting machine %s with exception:', machine)
+        machine.move(failure_pool)

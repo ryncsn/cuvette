@@ -34,7 +34,15 @@ class Inspector(InspectorBase):
         "cpu-model": {
             "type": str,
             "description": "CPU model, code name like sandybridge, westmer, or ID in integer"
-        }
+        },
+        "cpu-flags": {
+            "type": list,
+            "description": "CPU flags need to be supported"
+        },
+        '1g_hugepage': {
+            'type': bool,
+            "description": "If huge page is needed, if needed, pdpe1gb is appended to cpu-flags"
+        },
     }
 
     @classmethod
@@ -54,4 +62,6 @@ class Inspector(InspectorBase):
 
     @classmethod
     def create_filter(cls, query):
+        if query.get('1g_hugepage'):
+            query.setdefault('cpu-flags', []).append('pdpe1gb')
         return flat_filter(cls, query)

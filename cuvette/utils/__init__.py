@@ -1,6 +1,7 @@
 """
 Utils for cuvette
 """
+import typing
 import datetime
 import inspect
 import importlib
@@ -21,13 +22,13 @@ def find_all_sub_module(init_path: str, exclude=[], extra=[]):
     )
 
 
-def load_all_sub_module(module_name: str):
+def load_all_sub_module(module_name: str, submodules: typing.List[str]=None):
     """
     Find all module/py file in a folder which given __init__.py file belongs to.
     """
     module = importlib.import_module(module_name)
     return dict([(name, importlib.import_module("{}.{}".format(module_name, name)))
-                 for name in module.__all__])
+                 for name in submodules or module.__all__])
 
 
 def type_to_string(type_):
@@ -39,6 +40,10 @@ def type_to_string(type_):
         return 'int'
     elif type_ is list:
         return 'list'
+    elif type_ is bool:
+        return 'bool'
+    elif type_ is None:
+        return None
     elif type_ is datetime.datetime:
         return 'datetime'
     elif type_ is datetime.date:
