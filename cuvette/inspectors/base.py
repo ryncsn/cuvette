@@ -10,92 +10,7 @@ from asyncssh.connection import SSHConnection
 logger = logging.getLogger(__name__)
 
 
-class InspectorBase(metaclass=abc.ABCMeta):
-    provide = abc.abstractproperty()
-    """
-    What parameters are provided by this Inspector
-    """
-    def __init__(self):
-        """
-        Do some self check or setup code here.
-        """
-        pass
-
-    @abc.abstractmethod
-    async def inspect(self, machine: Machine, conn: SSHConnection):
-        """
-        Inspact a machine with given ssh connection
-
-        ssh connection is managed outside this function so each
-        inspector have their own ssh context for cleaner detection.
-        """
-        pass
-
-    @abc.abstractmethod
-    def match(self, machine: Machine, query: dict):
-        """
-        Judge if one machine matches the query.
-
-        The query passed in is a mongodb like query:
-        {
-            "magic": 1,
-            "cpu.num": {
-                '$gt': 1,
-                '$lte': 4,
-            },
-            "cpu.num": {
-                '$in': [41, 42, 43],
-            },
-            ...
-        }
-
-        Use flat_match for built-in native python type compare.
-
-        This function should return immediately, and it should be considered
-        an error if any machine prop is absent, cause inspect() is async and
-        time comsuming, but match should alway return immediately, inspect()
-        should always be called before match().
-
-        # TODO
-        For better performance, use create_filter to create a filter to make use
-        of MongoDB's index. We keep the query mongodb style to make it easier to
-        pass it to mongodb.
-        """
-        pass
-
-    @abc.abstractmethod
-    def hard_filter(self, query: dict):
-        """
-        Filter out machines by hard limits,
-
-        This should return a mongodb query which filters all machine
-        don't meet and CAN'T be transformed to meet the query condition.
-        """
-        pass
-
-    @abc.abstractmethod
-    def soft_filter(self, query: dict):
-        """
-        Filter out machines by hard limits,
-
-        This should return a mongodb query which filters all machine
-        don't meet but CAN be transformed to meet the query condition.
-        """
-        pass
-
-    @abc.abstractmethod
-    def provision_filter(self, query: dict):
-        """
-        Create a filter that will be acceptaced by provisioners
-
-        Inspectors will do some extra job to preprocess the query for provisioners
-        Eg. query contains key 'hugepage' = True, will be turn into a extra cpu flag
-        before passing to provisioner.
-        """
-        pass
-
-
-def flat_match(self: InspectorBase, machine: Machine, query: dict):
+def flat_match(self, machine: Machine, query: dict):
     """
     Flat compare, this could be used as a helper.
     """
@@ -129,7 +44,7 @@ def flat_match(self: InspectorBase, machine: Machine, query: dict):
     return True
 
 
-def flat_filter(self: InspectorBase, query: dict):
+def flat_filter(self, query: dict):
     """
     Flat filter, this could be used as a helper.
     Just passthrough the filter.
@@ -153,3 +68,83 @@ def flat_filter(self: InspectorBase, query: dict):
             ret[prop] = query[prop]
 
     return ret
+
+
+class InspectorBase(metaclass=abc.ABCMeta):
+    provide = abc.abstractproperty()
+    """
+    What parameters are provided by this Inspector
+    """
+    def __init__(self):
+        """
+        Do some self check or setup code here.
+        """
+        pass
+
+    async def inspect(self, machine: Machine, conn: SSHConnection):
+        """
+        Inspact a machine with given ssh connection
+
+        ssh connection is managed outside this function so each
+        inspector have their own ssh context for cleaner detection.
+        """
+        pass
+
+    def match(self, machine: Machine, query: dict):
+        """
+        Judge if one machine matches the query.
+
+        The query passed in is a mongodb like query:
+        {
+            "magic": 1,
+            "cpu.num": {
+                '$gt': 1,
+                '$lte': 4,
+            },
+            "cpu.num": {
+                '$in': [41, 42, 43],
+            },
+            ...
+        }
+
+        Use flat_match for built-in native python type compare.
+
+        This function should return immediately, and it should be considered
+        an error if any machine prop is absent, cause inspect() is async and
+        time comsuming, but match should alway return immediately, inspect()
+        should always be called before match().
+
+        # TODO
+        For better performance, use create_filter to create a filter to make use
+        of MongoDB's index. We keep the query mongodb style to make it easier to
+        pass it to mongodb.
+        """
+        return flat_match(self, machine, query)
+
+    def hard_filter(self, query: dict):
+        """
+        Filter out machines by hard limits,
+
+        This should return a mongodb query which filters all machine
+        don't meet and CAN'T be transformed to meet the query condition.
+        """
+        return flat_filter(self, query)
+
+    def soft_filter(self, query: dict):
+        """
+        Filter out machines by soft limits, not used yet.
+
+        This should return a mongodb query which filters all machine
+        don't meet but CAN be transformed to meet the query condition.
+        """
+        return flat_filter(self, query)
+
+    def provision_filter(self, query: dict):
+        """
+        Preprocess the query that will be acceptaced by provisioners
+
+        Inspectors will do some extra job to preprocess the query for provisioners
+        Eg. query contains key 'hugepage' = True, will be turn into a extra cpu flag
+        before passing to provisioner.
+        """
+        return query

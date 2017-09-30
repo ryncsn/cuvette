@@ -17,7 +17,10 @@ class Provisioner(ProvisionerBase):
     name = 'beaker'
     accept = ACCEPT_PARAMS
 
-    def avaliable(query: dict):
+    def __init__(self):
+        pass
+
+    def avaliable(self, query: dict):
         """
         If given query is acceptable by this provisioner
         """
@@ -28,7 +31,7 @@ class Provisioner(ProvisionerBase):
         else:
             return True
 
-    def cost(query: dict):
+    def cost(self, query: dict):
         """
         How much time is likely to be costed provision a machine
         matches given query
@@ -40,7 +43,7 @@ class Provisioner(ProvisionerBase):
         else:
             return 100
 
-    async def provision(machines: typing.List[Machine], query: dict):
+    async def provision(self, machines: typing.List[Machine], query: dict):
         """
         Trigger the provision with given query
         """
@@ -55,7 +58,7 @@ class Provisioner(ProvisionerBase):
             machines[idx].update(machine_info)
             machines[idx].meta['beaker-job-id'] = job_id
 
-    async def teardown(machines: typing.List[Machine], query: dict):
+    async def teardown(self, machines: typing.List[Machine], query: dict):
         """
         Teardown a machine provisioned from beaker,
         If user have deployed some service need to be teared down,
@@ -67,7 +70,7 @@ class Provisioner(ProvisionerBase):
         for job in jobs:
             await cancel_beaker_job(job)
 
-    async def is_teareddown(machine: Machine, meta: dict, query: dict):
+    async def is_teareddown(self, machine: Machine, meta: dict, query: dict):
         """
         Trigger the provision with given query
         """

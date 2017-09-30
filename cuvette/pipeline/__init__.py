@@ -3,6 +3,7 @@ Only have one pipeline, so it's singleton
 
 Maybe will extend it later
 """
+import copy
 import asyncio
 import logging
 import itertools
@@ -13,7 +14,6 @@ import cuvette.provisioners as provisioners
 
 from cuvette.pool.machine import Machine
 from cuvette.pipeline.task import ProvisionTask, Tasks
-from cuvette.utils import format_to_json, type_to_string
 
 
 Inspectors = inspectors.Inspectors
@@ -30,14 +30,16 @@ def setup_parameters():
     """
     Check and setup parameters that could be accept
     """
+    # use InspectorsParameters as the baseline, check and update missing ones from ProvisionersParameters
+    parameters = InspectorsParameters.copy()
     for provisioner in Provisioners.values():
         for param_name, param_meta in provisioner.accept.items():
-            inspecter_param_meta = InspectorsParameters.get(param_name)
+            inspecter_param_meta = parameters.get(param_name)
             if not inspecter_param_meta:
                 logger.error('Parameter "%s" of provisioner "%s" is not inspected by any inspector',
                              param_name, provisioner.name)
-                InspectorsParameters[param_name] = param_meta.copy()
-                InspectorsParameters[param_name]['source'] = {
+                parameters[param_name] = param_meta.copy()
+                parameters[param_name]['source'] = {
                     'type': 'provisioner',
                     'name': param_name
                 }
@@ -50,16 +52,13 @@ def setup_parameters():
                                      'provisioner %s gives:\n %s\n',
                                      param_name, inspecter_param_meta, provisioner.name, param_meta)
                         break
+    return parameters
 
 
 Parameters = setup_parameters()
 
 
 DEFAULT_POOL_SIZE = 50
-
-
-def format_parameters(parameters: dict):
-    return format_to_json(parameters, failover=type_to_string)
 
 
 class PipelineException(Exception):
@@ -76,14 +75,15 @@ class Pipeline(object):
         """
         self.request = request
 
-    async def query(self, request, query_params: dict):
+    async def query(self, query_params: dict):
         """
         Return if there is any machine matches required query or
         return the already provisining machine.
         """
+        query_params = copy.deepcopy(query_params)
         composed_filter = {}
         for inspector in Inspectors.values():
-            composed_filter.update(inspector.create_filter(query_params))
+            composed_filter.update(inspector.hard_filter(query_params))
 
         # TODO: sanitize, it's dangerous
         for key, value in query_params.items():
@@ -100,6 +100,9 @@ class Pipeline(object):
         """
         # Currently, only return one machine one time
         machine = Machine()
+
+        for inspector in Inspectors.values():
+            query_params = inspector.provision_filter(query_params)
 
         await self.request['magic'].pre_provision(machine, query_params)
 

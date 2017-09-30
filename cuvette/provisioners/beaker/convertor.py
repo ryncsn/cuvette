@@ -267,7 +267,7 @@ def fill_host_requirements(host_requires: Element, sanitized_query: dict):
     if sanitized_query.get('cpu-arch'):
         add_requirement('arch', '=', sanitized_query.get('cpu-arch'))
 
-    for op, value in sanitized_query.get('memory.total_size', {}).items():
+    for op, value in sanitized_query.get('memory-total_size', {}).items():
         add_requirement('memory', op_map[op], value)
 
     for flag in sanitized_query.get('cpu-flags', []):

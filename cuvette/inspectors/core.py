@@ -5,7 +5,7 @@ import logging
 
 from datetime import datetime
 from datetime import timedelta
-from cuvette.inspectors.base import InspectorBase, flat_match, flat_filter
+from cuvette.inspectors.base import InspectorBase, flat_filter
 from cuvette.pool.machine import Machine
 
 MAX_LIFESPAN = 1209600
@@ -51,7 +51,6 @@ class Inspector(InspectorBase):
         },
     }
 
-    @classmethod
     async def inspect(self: InspectorBase, machine: Machine, conn):
         """
         This inspector won't detect anything as all properties should be provide by provisioner
@@ -72,19 +71,14 @@ class Inspector(InspectorBase):
             start_time = machine['start_time']
             lifespan = machine['lifespan']
             machine['expire_time'] = start_time + timedelta(seconds=lifespan)
-        for prop in cls.provide.keys():
+        for prop in self.provide.keys():
             if prop in ['lifetime']:
                 continue
             if machine.get(prop) is None:
                 logger.error("Illegal machine object found, missing prop '%s', content '%s'", prop, machine)
 
-    @classmethod
-    def match(cls, query):
-        return flat_match(cls, query)
-
-    @classmethod
-    def create_filter(cls, query: dict):
-        ret = flat_filter(cls, query)
+    def hard_filter(self, query: dict):
+        ret = flat_filter(self, query)
         if 'lifetime' in query.keys():
             del ret['lifetime']
             ret['expire_time'] = {

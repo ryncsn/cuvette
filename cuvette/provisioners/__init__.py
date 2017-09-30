@@ -9,7 +9,7 @@ from .base import sanitize_query, ValidateError  # noqa
 logger = logging.getLogger(__name__)
 
 __all__ = find_all_sub_module(__file__, exclude=['base'])
-Provisioners = dict((k, v.Provisioner) for k, v in load_all_sub_module(__name__).items())
+Provisioners = dict((k, v.Provisioner()) for k, v in load_all_sub_module(__name__).items())
 
 __all__.extend(['ValidateError'])
 

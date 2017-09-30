@@ -3,11 +3,15 @@ import logging
 from aiohttp import web
 
 from cuvette.utils import parse_query, parse_request_params
-from cuvette.pipeline import Pipeline
-from cuvette.inspectors import Parameters
+from cuvette.utils import format_to_json, type_to_string
+from cuvette.pipeline import Pipeline, Parameters
 from cuvette.provisioners import Provisioners
 
 logger = logging.getLogger(__name__)
+
+
+def format_parameters(parameters: dict):
+    return format_to_json(parameters, failover=type_to_string)
 
 
 async def index(request):
@@ -43,7 +47,7 @@ async def parameters(request):
     Get all parameters of inspectors
     """
     # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
-    data = Parameters
+    data = format_parameters(Parameters)
     return web.json_response(data)
 
 

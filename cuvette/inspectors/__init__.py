@@ -11,7 +11,7 @@ from cuvette.pool.machine import Machine
 logger = logging.getLogger(__name__)
 
 __all__ = find_all_sub_module(__file__, exclude=['base'])
-Inspectors = dict((k, v.Inspector) for k, v in load_all_sub_module(__name__).items())
+Inspectors = dict((k, v.Inspector()) for k, v in load_all_sub_module(__name__).items())
 
 
 def get_all_parameters():

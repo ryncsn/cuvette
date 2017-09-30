@@ -1,7 +1,7 @@
 """
 Inspect a machine's CPU
 """
-from cuvette.inspectors.base import InspectorBase, flat_match, flat_filter
+from cuvette.inspectors.base import InspectorBase, flat_filter
 from cuvette.pool.machine import Machine
 
 
@@ -45,8 +45,7 @@ class Inspector(InspectorBase):
         },
     }
 
-    @classmethod
-    async def inspect(cls, machine: Machine, conn):
+    async def inspect(self, machine: Machine, conn):
         res = await conn.run('lscpu')
         res_dict = dict([
             (k.strip(), v.strip()) for k, v in
@@ -56,12 +55,12 @@ class Inspector(InspectorBase):
         machine['cpu-vendor'] = res_dict['Vendor ID']
         machine['cpu-model'] = res_dict['Model']
 
-    @classmethod
-    def match(cls, query):
-        return flat_match(cls, query)
-
-    @classmethod
-    def create_filter(cls, query):
+    def hard_filter(self, query):
         if query.get('1g_hugepage'):
             query.setdefault('cpu-flags', []).append('pdpe1gb')
-        return flat_filter(cls, query)
+        return flat_filter(self, query)
+
+    def provision_filter(self, query):
+        if query.get('1g_hugepage'):
+            query.setdefault('cpu-flags', []).append('pdpe1gb')
+        return query
