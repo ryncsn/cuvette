@@ -105,7 +105,11 @@ class MachineView(object):
         if not machines:
             machines = await Pipeline(request).provision(query_params, timeout=None)
         if machines:
-            return web.json_response(machines)
+            machines = await Pipeline(request).reserve({
+                'magic': [m['magic'] for m in machines],
+                'reserve_time': query_params.get('reserve_time') or query_params.get('lifetime')
+            })
+            return web.json_response([m.to_json() for m in machines])
         else:
             return web.json_response({
                 'message': 'Failed to find or provision a machine'

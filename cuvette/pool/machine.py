@@ -4,10 +4,15 @@ Module to manage a beaker machine
 Use MongoDB collection as the main machine pool,
 every machine object stored in it is "in the pool"
 """
+import logging
+
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorCollection
 
 from cuvette.pool import main_pool, failure_pool
+from cuvette.tasks.base import Tasks
+
+logger = logging.getLogger(__name__)
 
 
 class Machine(dict):
@@ -37,6 +42,18 @@ class Machine(dict):
     @property
     def meta(self):
         return self['meta']
+
+    @property
+    def tasks(self):
+        ret = []
+        for task_uuid in self['tasks'].keys():
+            task = Tasks.get(task_uuid)
+            if not task:
+                logger.error('Dropped dead task: {}'.format(task_uuid))
+                self['tasks'].pop(task_uuid)
+            else:
+                ret.append(task)
+        return ret
 
     def __init__(self, *args,
                  hostname: str = None,
@@ -92,7 +109,7 @@ class Machine(dict):
             raise RuntimeError("Invalid machine object {}".format(self))
 
     def self_check(self):
-        if not self['status'] in {'new', 'preparing', 'teardown', 'ready', 'failed', 'deleted'}:
+        if not self['status'] in {'new', 'preparing', 'reserved', 'teardown', 'ready', 'failed', 'deleted'}:
             raise RuntimeError('Invalid machine status {}'.format(self['status']))
         if self['status'] in {'teardown', 'reserved', 'ready', }:
             if not self['hostname']:

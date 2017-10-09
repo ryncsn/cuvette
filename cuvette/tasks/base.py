@@ -5,20 +5,14 @@ Some jobs are synchronous, let them run in executor
 """
 import logging
 import asyncio
-import typing
 import uuid
 import abc
 
-import cuvette.provisioners as provisioner
-
 from concurrent.futures import ThreadPoolExecutor
-from cuvette.pool.machine import Machine
-
-from cuvette.provisioners.base import sanitize_query
-from cuvette.inspectors import perform_check
 
 logger = logging.getLogger(__name__)
 
+# TODO: in db
 Tasks = {}
 
 
@@ -34,10 +28,11 @@ class BaseTask(metaclass=abc.ABCMeta):
 
     Also sub classes inherit from this class will realize some logic to help
     caller to execute task on machine (Eg. provision task, transform task, reserve task).
+    Task should be stateless,
     """
     TYPE = 'base'
 
-    def __init__(self, machines: typing.List[Machine], loop=None):
+    def __init__(self, machines, loop=None):
         self.loop = loop or asyncio.get_event_loop()
         self.uuid = str(uuid.uuid1())
         # Machines this task may related to, if task failed, all related machine will be
@@ -46,7 +41,6 @@ class BaseTask(metaclass=abc.ABCMeta):
         # If not None, a async task is running and when task.cancel() is called, this
         # future is cancelled
         self.future = None
-        self.status = 'pending'
 
         Tasks[self.uuid] = self
         for machine in self.machines:
@@ -54,9 +48,6 @@ class BaseTask(metaclass=abc.ABCMeta):
                 'type': self.TYPE,
                 'status': 'running'
             }
-
-    async def on_start(self):
-        logger.debug('Task {} Started.'.format(self))
 
     async def on_done(self):
         for machine in self.machines:
@@ -86,8 +77,8 @@ class BaseTask(metaclass=abc.ABCMeta):
         and mark the machine as failed.
         """
         self.status = 'running'
+        logger.debug('Task {} Started.'.format(self))
         self.future = asyncio.ensure_future(self.routine())
-        await self.on_start()
         try:
             await self.future
         except Exception as error:
@@ -95,7 +86,7 @@ class BaseTask(metaclass=abc.ABCMeta):
         else:
             await self.on_success()
         finally:
-            if not self.future.cancelled() and not self.future.done():
+            if not self.future.done() and not self.future.cancelled():
                 logger.error('Coroutine leaked with {}'.format(self))
                 self.future.cancel()
             self.future = None
@@ -104,60 +95,16 @@ class BaseTask(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     async def routine(self, timeout=5):
         """
-        The real task routine each subclass should implement
+        The real task routine each subclass should implement.
         """
         pass
 
+    def conflict_with(task):
+        """
+        If this task conflict with another task, if not they could be run at the same time.
+        Return true by default so all tasks are exlusive
+        """
+        return True
+
     def __repr__(self):
         return "<{} Task UUID:{}>".format(self.TYPE, self.uuid)
-
-
-class ProvisionTask(BaseTask):
-    """
-    The helper task to provision a machine
-    """
-    TYPE = 'provision'
-
-    def __init__(self, machines: typing.List[Machine], provisioner, query, *args, **kwargs):
-        super(ProvisionTask, self).__init__(machines, *args, **kwargs)
-        self.provisioner = provisioner
-        self.query = query
-
-    async def routine(self):
-        sanitized_query = sanitize_query(self.query, self.provisioner.accept)
-        for machine in self.machines:
-            machine['provisioner'] = self.provisioner.name
-            machine['status'] = 'preparing'
-            await machine.save()
-        await self.provisioner.provision(self.machines, sanitized_query)
-        for machine in self.machines:
-            await perform_check(machine)
-            machine['status'] = 'ready'
-            await machine.save()
-
-
-class TeardownTask(BaseTask):
-    """
-    The helper task to teardown a machine
-    """
-    TYPE = 'teardown'
-
-    def __init__(self, machines: typing.List[Machine], *args, **kwargs):
-        super(TeardownTask, self).__init__(machines, *args, **kwargs)
-
-    async def routine(self):
-        provisioner_machine_group = {}
-        for machine in self.machines:
-            provisioner_name = machine['provisioner']
-            provisioner_machine_group.setdefault(provisioner_name, []).append(machine)
-
-        for provisioner_name, machines in provisioner_machine_group.items():
-            provisioner.Provisioners.get(provisioner_name).teardown(machines)
-
-    async def on_start(self):
-        for machine in self.machines:
-            await machine.move()
-
-    async def on_success(self):
-        for machine in self.machines:
-            await machine.delete()

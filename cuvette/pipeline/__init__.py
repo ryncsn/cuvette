@@ -13,7 +13,7 @@ import cuvette.transformers as transformers
 import cuvette.provisioners as provisioners
 
 from cuvette.pool.machine import Machine
-from cuvette.pipeline.task import ProvisionTask, Tasks
+from cuvette.tasks import ProvisionTask, ReserveTask, Tasks
 
 
 Inspectors = inspectors.Inspectors
@@ -113,22 +113,43 @@ class Pipeline(object):
             provision_task = ProvisionTask([machine], min_cost_provisioner, query_params)
             finished, pending = await asyncio.wait([provision_task.run()], timeout=timeout)
             if finished:
-                return [machine.to_json()]
+                return machine
             else:
-                return [machine.to_json()]
+                return machine
         else:
             return {'message': 'Failed to provision a machine, as no one machine matched your need, '
                     'or there are zero machine.'}
 
-    async def reserve(self, query_params: dict):
+    async def reserve(self, query_params: dict, greedy=False):
         """
-        Reserve a machine
+        Reserve a machine, if greedy, reserve as much as possible without checking
         """
-        pass
+        try:
+            reserve_time = int(query_params.get('reserve_time', 3600))
+        except Exception:
+            raise RuntimeError('reserve_time not specified or illegal')
+        machines = self.query(query_params)
+        if not greedy:
+            for machine in machines:
+                if machine['tasks']:
+                    raise RuntimeError("Can't reserve machine with tasks")
+        reserve_task = ReserveTask(machines, reserve_time)
+        asyncio.ensure_future(reserve_task.run())
+        return machines
 
     async def release(self, query_params: dict):
         """
-        Release a reserved machine
+        Release a reserved machine, cancel all reserve tasks on machines
+        """
+        machines = await self.query(query_params)
+        for machine in machines:
+            for task in machine.tasks:
+                if task.type == 'reserve':
+                    task.cancel()
+
+    async def inspect(self, query_params: dict):
+        """
+        Inspect some machines
         """
         pass
 

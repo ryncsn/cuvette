@@ -2,7 +2,7 @@ import asyncio
 
 from datetime import datetime
 
-from cuvette.pipeline.task import TeardownTask
+from cuvette.tasks import TeardownTask
 from cuvette.pool.machine import Machine
 
 

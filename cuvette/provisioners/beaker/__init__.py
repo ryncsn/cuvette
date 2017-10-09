@@ -64,6 +64,8 @@ class Provisioner(ProvisionerBase):
         If user have deployed some service need to be teared down,
         they should teardown the service by themselves.
         """
+        # TODO: Delete all machine with beaker-job-id, when deleting one machine of a
+        # job which requested multiple machines.
         jobs = set()
         for machine in machines:
             jobs.add(machine.meta['beaker-job-id'])
