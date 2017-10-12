@@ -139,10 +139,16 @@ class Pipeline(object):
         Release a reserved machine, cancel all reserve tasks on machines
         """
         machines = await self.query(query_params)
+        ret = []
         for machine in machines:
+            released = False
             for task in machine.tasks:
-                if task.type == 'reserve':
+                if task.TYPE == 'reserve':
                     task.cancel()
+                    released = True
+            if released:
+                ret.append(machine)
+        return ret
 
     async def inspect(self, query_params: dict):
         """
@@ -167,3 +173,4 @@ class Pipeline(object):
                         task.cancel()
             Provisioners[provisioner].teardown(machines)
             map(machines, lambda x: x.delete())
+        return machines

@@ -13,6 +13,8 @@ from cuvette.middlewares import Middlewares
 from cuvette.settings import Settings
 from cuvette.pool import setup as pool_setup
 from cuvette.views import index, parameters, provisioners, MachineView
+from cuvette.views.callbacks import tear_me_down, describ_me, release_me
+
 
 THIS_DIR = Path(__file__).parent
 BASE_DIR = THIS_DIR.parent
@@ -41,6 +43,10 @@ def setup_routes(app):
     app.router.add_post('/machines/request', MachineView.request, name='machine_request_post')
     app.router.add_post('/machines/provision', MachineView.provision, name='machine_provision')
     app.router.add_post('/machines/teardown', MachineView.provision, name='machine_teardown')
+
+    app.router.add_get('/release_me', release_me, name='release_me')
+    app.router.add_get('/describ_me', describ_me, name='describ_me')
+    app.router.add_get('/tear_me_down', tear_me_down, name='tear_me_down')
 
 
 def create_app(loop):

@@ -79,7 +79,7 @@ class Machine(dict):
     def tasks(self):
         # TODO: move to Task.from_machine
         ret = []
-        for task_uuid in self['tasks'].keys():
+        for task_uuid in list(self['tasks'].keys()).copy():
             task = Tasks.get(task_uuid)
             if not task:
                 logger.error('Dropped dead task: {}'.format(task_uuid))
