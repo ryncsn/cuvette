@@ -75,7 +75,7 @@ class Pipeline(object):
         """
         self.request = request
 
-    async def query(self, query_params: dict):
+    async def query(self, query_params: dict, count=None):
         """
         Return if there is any machine matches required query or
         return the already provisining machine.
@@ -85,15 +85,9 @@ class Pipeline(object):
         for inspector in Inspectors.values():
             composed_filter.update(inspector.hard_filter(query_params))
 
-        # TODO: sanitize, it's dangerous
-        for key, value in query_params.items():
-            if key not in InspectorsParameters:
-                composed_filter[key] = value
-                logger.warn('Passing through parameter "%s", as no inspector for it', key)
+        return [Machine(m) for m in await Machine.find_all(composed_filter, count=count)]
 
-        return [Machine(m) for m in await Machine.find_all(composed_filter)]
-
-    async def provision(self, query_params: dict, timeout=5):
+    async def provision(self, query_params: dict, timeout=5, count=None):
         """
         Block for timeout time for the provision to finish,
         else run the task async.
@@ -113,26 +107,27 @@ class Pipeline(object):
             provision_task = ProvisionTask([machine], min_cost_provisioner, query_params)
             finished, pending = await asyncio.wait([provision_task.run()], timeout=timeout)
             if finished:
-                return machine
+                return [machine]
             else:
-                return machine
+                return [machine]
         else:
             return {'message': 'Failed to provision a machine, as no one machine matched your need, '
                     'or there are zero machine.'}
 
-    async def reserve(self, query_params: dict, greedy=False):
+    async def reserve(self, query_params: dict, reserve_time=3600, count=None, greedy=False):
         """
         Reserve a machine, if greedy, reserve as much as possible without checking
         """
         try:
-            reserve_time = int(query_params.get('reserve_time', 3600))
+            reserve_time = int(query_params.pop('reserve_time', reserve_time))
         except Exception:
             raise RuntimeError('reserve_time not specified or illegal')
-        machines = self.query(query_params)
+        machines = await self.query(query_params, count=count)
         if not greedy:
             for machine in machines:
                 if machine['tasks']:
-                    raise RuntimeError("Can't reserve machine with tasks")
+                    raise RuntimeError("Can't reserve machine {} {} with tasks".format(
+                        machine.get('hostname', 'no-host'), machine.get('magic', 'no-magic')))
         reserve_task = ReserveTask(machines, reserve_time)
         asyncio.ensure_future(reserve_task.run())
         return machines

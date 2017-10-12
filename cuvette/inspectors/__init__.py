@@ -42,4 +42,4 @@ async def perform_check(machine: Machine):
                 await ins.inspect(machine, conn)
     except (OSError, asyncssh.Error) as error:
         logger.exception('Failed inspecting machine %s with exception:', machine)
-        machine.move(failure_pool)
+        await machine.fail()

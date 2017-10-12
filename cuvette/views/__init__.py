@@ -94,21 +94,29 @@ class MachineView(object):
         A blocking machine request API, return until timeout (with 301) or there is a valid machine
         useful for clients that only wants a machine and nothing else.
         """
+        REQUEST_PARAMS = ['reserve_time', 'status', 'reserve_count']
         if request.method == 'GET':
             query_params = parse_query(parse_request_params(request.query))
         elif request.method == 'POST':
             query_params = parse_query(await request.json())
 
-        machines = await request['magic'].pre_query(query_params)
-        if not machines:
-            machines = await Pipeline(request).query(query_params)
-        if not machines:
-            machines = await Pipeline(request).provision(query_params, timeout=None)
-        if machines:
-            machines = await Pipeline(request).reserve({
-                'magic': [m['magic'] for m in machines],
+        # Find / provision a ready machine and reserve it
+        provision_params = query_params.copy()
+        for key in REQUEST_PARAMS:
+            provision_params.pop(key, None)
+        count = query_params.pop('reserve_count', 1)
+        query_params.setdefault('status', 'ready')
+        machines = await Pipeline(request).query(query_params, count=count)
+        if not machines or len(machines) < count:
+            machines = await Pipeline(request).provision(provision_params, timeout=None, count=count)
+            query_params = {
+                'magic': {
+                    '$in': [m['magic'] for m in machines]
+                },
                 'reserve_time': query_params.get('reserve_time') or query_params.get('lifetime')
-            })
+            }  # Always return new provisoined machine on provisoin success
+        machines = await Pipeline(request).reserve(query_params, count=count)
+        if machines and len(machines) >= count:
             return web.json_response([m.to_json() for m in machines])
         else:
             return web.json_response({

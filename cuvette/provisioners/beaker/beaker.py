@@ -189,7 +189,7 @@ async def parse_machine_info(recipe: str):
             ret[key] = type_(values[0].text)
 
     system_type = ret.get('system-type')
-    if not system_type:
-        ret['system_type'] = 'baremetal'
+    if not system_type or system_type == 'None':
+        ret['system-type'] = 'baremetal'
 
     return ret

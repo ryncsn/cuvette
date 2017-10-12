@@ -22,7 +22,7 @@ async def house_keeping():
     }):
         if any(task['type'] == 'teardown' for task in machine['tasks'].values()):
             continue  # TODO: use mongo query
-        teardown_tasks.append(TeardownTask([machine]).run())
+        # teardown_tasks.append(TeardownTask([machine]).run())
     # Wait for 30s for tasks to finished, else change into async mode
     if teardown_tasks:
         finished, pending = await asyncio.wait(teardown_tasks, timeout=HOUSE_KEEPING_FREQ)

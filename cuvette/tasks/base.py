@@ -41,20 +41,41 @@ class BaseTask(metaclass=abc.ABCMeta):
         # If not None, a async task is running and when task.cancel() is called, this
         # future is cancelled
         self.future = None
+        self.status = 'pending'
+        self.meta = {}
 
         Tasks[self.uuid] = self
         for machine in self.machines:
             machine['tasks'][self.uuid] = {
                 'type': self.TYPE,
-                'status': 'running'
+                'status': self.status,
+                'meta': self.meta,
             }
 
-    async def on_done(self):
+    async def _save_task(self):
+        for machine in self.machines:
+            machine['tasks'][self.uuid] = {
+                'type': self.TYPE,
+                'status': self.status,
+                'meta': self.meta,
+            }
+            await machine.save()
+
+    async def _delete_task(self):
         for machine in self.machines:
             machine['tasks'].pop(self.uuid, None)
+            await machine.save()
+
+    async def on_done(self):
+        logger.info('Task {} Done and removed.'.format(self))
+
+    async def on_start(self):
+        logger.debug('Task {} Started.'.format(self))
+        await self._save_task()
 
     async def on_success(self):
         logger.debug('Task {} Successed.'.format(self))
+        await self._delete_task()
 
     async def on_failure(self):
         logger.exception("Machine {}, Task {}, encounterd exception:".format(self.machines, self))
@@ -77,8 +98,8 @@ class BaseTask(metaclass=abc.ABCMeta):
         and mark the machine as failed.
         """
         self.status = 'running'
-        logger.debug('Task {} Started.'.format(self))
         self.future = asyncio.ensure_future(self.routine())
+        await self.on_start()
         try:
             await self.future
         except Exception as error:

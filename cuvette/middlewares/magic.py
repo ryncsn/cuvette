@@ -40,7 +40,6 @@ class Magic(object):
 
         Unless the user request with param 'magic' = 'new'
         """
-        params = params.copy()
         magic = params.pop('magic', None)
 
         if magic == 'new':
@@ -56,6 +55,9 @@ class Magic(object):
             })
             if machines:
                 return machines
+
+        if isinstance(magic, str):
+            params['magic'] = magic
 
         return None
 

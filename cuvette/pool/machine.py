@@ -21,14 +21,14 @@ class Machine(dict):
     """
 
     @classmethod
-    async def find_all(cls, query={}, pool=None, **kwargs):
+    async def find_all(cls, query={}, pool=None, count=None, **kwargs):
         """
         We are likely to have a upbound of less than 1000 machines,
         so returning a list is fine for performance.
         """
         pool = pool or main_pool
         return [
-            cls(machine) for machine in await pool.find(query, **kwargs).to_list(None)]
+            cls(machine) for machine in await pool.find(query, **kwargs).to_list(count)]
 
     @classmethod
     async def find_one(cls, query={}, pool=None, **kwargs):
@@ -132,7 +132,13 @@ class Machine(dict):
         """
         pool = pool or main_pool
         self.self_check()
-        await pool.insert_one(self)
+        print(self)
+        if self.get('_id', None) is None:
+            await pool.insert_one(self)
+        else:
+            await pool.find_one_and_update(self._ident(), {
+                '$set': self
+            })
         self.update(await pool.find_one(self._ident()))
 
     async def delete(self):

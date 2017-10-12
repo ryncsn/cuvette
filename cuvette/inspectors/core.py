@@ -19,6 +19,14 @@ class Inspector(InspectorBase):
     Inspect machine's CPU
     """
     provide = {
+        "magic": {
+            "description": "A surrogate key for each machine, could be a reserved keyword, currently "
+            "reserved keywords are 'noprovision', 'new'",
+        },
+        "status": {
+            "type": str,
+            "description": "Machine status, when requesting a machine, this should be 'ready'",
+        },
         "system-type": {
             "type": str,
             "description": "Machine type, usually baremetal, vm or maybe container?"
@@ -57,10 +65,13 @@ class Inspector(InspectorBase):
         Else we have a broken provisioner.
         """
         res = await conn.run('cat /proc/cpuinfo')
-
-        res_dict = dict([
-            (k.strip(), v.strip()) for k, v in
-            [line.split(':', 1) for line in res.stdout.splitlines()]])
+        res_dict = {}
+        for line in res.stdout.splitlines():
+            try:
+                key, value = line.split(':', 1)
+            except Exception:
+                logger.error("Unexpected line %s", line)
+            res_dict[key.strip()] = value.strip()
 
         if 'hypervisor' in res_dict.get('flags', ''):
             if machine.setdefault('system-type', 'vm') == 'baremetal':
@@ -80,7 +91,7 @@ class Inspector(InspectorBase):
     def hard_filter(self, query: dict):
         ret = flat_filter(self, query)
         if 'lifetime' in query.keys():
-            del ret['lifetime']
+            ret.pop('lifetime', None)
             ret['expire_time'] = {
                 '$gte': datetime.now() + timedelta(seconds=int(query['lifetime']))
             }

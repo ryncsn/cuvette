@@ -67,6 +67,10 @@ def flat_filter(self, query: dict):
         else:
             ret[prop] = query[prop]
 
+        type_ = meta.get('type', None)
+        if type_:
+            pass  # TODO
+
     return ret
 
 

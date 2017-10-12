@@ -31,11 +31,7 @@ class TeardownTask(BaseTask):
             provisioner_machine_group.setdefault(provisioner_name, []).append(machine)
 
         for provisioner_name, machines in provisioner_machine_group.items():
-            provisioner.Provisioners.get(provisioner_name).teardown(machines)
-
-    async def on_start(self):
-        for machine in self.machines:
-            await machine.move()
+            provisioner.Provisioners.get(provisioner_name).teardown(machines, {})
 
     async def on_success(self):
         for machine in self.machines:
