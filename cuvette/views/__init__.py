@@ -146,5 +146,5 @@ class MachineView(object):
         """
         # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
         query_params = parse_query(await request.json())
-        machine = await Pipeline(request).teardown(query_params)
-        return web.json_response(machine)
+        machines = await Pipeline(request).teardown(query_params)
+        return web.json_response(machines)
