@@ -130,12 +130,11 @@ class Machine(dict):
         pool = pool or get_main_pool(self._db)
         self.self_check()
         if self.get('_id', None) is None:
-            await pool.insert_one(self)
+            self['_id'] = (await pool.insert_one(self)).inserted_id
         else:
             await pool.find_one_and_update(self._ident(), {
                 '$set': self
             })
-        self.update(await pool.find_one(self._ident()))
 
     async def delete(self):
         """

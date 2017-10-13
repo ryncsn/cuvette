@@ -57,7 +57,7 @@ async def execute_beaker_job(job_xml: str):
             logger.info("Submitted beaker job %s", task_url)
         try:
             while True:
-                # await asyncio.sleep(10)
+                await asyncio.sleep(55)
                 attempt += 1
                 logger.info("Checking status of job %s (attempt %s)", task_url, attempt)
                 active_job_xml_str = await bkr_command('job-results', job_id)

@@ -98,9 +98,9 @@ class BaseTask(metaclass=abc.ABCMeta):
         and mark the machine as failed.
         """
         self.status = 'running'
-        self.future = asyncio.ensure_future(self.routine())
         await self.on_start()
         try:
+            self.future = asyncio.ensure_future(self.routine())
             await self.future
         except Exception as error:
             await self.on_failure()
