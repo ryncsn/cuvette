@@ -1,0 +1,4 @@
+APP_MODULE=cuvette.gunicorn:app
+APP_CONFIG=gunicorn.config.py
+UPGRADE_PIP_TO_LATEST=true
+WEB_CONCURRENCY=1
