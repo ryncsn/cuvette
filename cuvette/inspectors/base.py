@@ -4,13 +4,12 @@ Base classed and helper for inspectors
 import abc
 import logging
 
-from cuvette.pool.machine import Machine
 from asyncssh.connection import SSHConnection
 
 logger = logging.getLogger(__name__)
 
 
-def flat_match(self, machine: Machine, query: dict):
+def flat_match(self, machine, query: dict):
     """
     Flat compare, this could be used as a helper.
     """
@@ -85,7 +84,7 @@ class InspectorBase(metaclass=abc.ABCMeta):
         """
         pass
 
-    async def inspect(self, machine: Machine, conn: SSHConnection):
+    async def inspect(self, machine, conn: SSHConnection):
         """
         Inspact a machine with given ssh connection
 
@@ -94,7 +93,7 @@ class InspectorBase(metaclass=abc.ABCMeta):
         """
         pass
 
-    def match(self, machine: Machine, query: dict):
+    def match(self, machine, query: dict):
         """
         Judge if one machine matches the query.
 

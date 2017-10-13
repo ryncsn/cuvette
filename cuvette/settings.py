@@ -41,7 +41,7 @@ class Settings(object):
     DB_USER = Required(str)
     DB_PASSWORD = Required(str)
     DB_HOST = 'localhost'
-    DB_PORT = '5432'
+    DB_PORT = '27017'
 
     def __init__(self, **custom_settings):
         """

@@ -2,7 +2,6 @@
 Inspect a machine's CPU
 """
 from cuvette.inspectors.base import InspectorBase, flat_filter
-from cuvette.pool.machine import Machine
 
 
 VENDOR_ALIAS = [
@@ -45,7 +44,7 @@ class Inspector(InspectorBase):
         },
     }
 
-    async def inspect(self, machine: Machine, conn):
+    async def inspect(self, machine, conn):
         res = await conn.run('lscpu')
         res_dict = dict([
             (k.strip(), v.strip()) for k, v in

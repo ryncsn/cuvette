@@ -4,11 +4,8 @@ Async Executor for tasks.
 Some jobs are synchronous, let them run in executor
 """
 import logging
-import typing
 
 import cuvette.provisioners as provisioner
-
-from cuvette.pool.machine import Machine
 
 from cuvette.tasks import BaseTask
 
@@ -21,7 +18,7 @@ class TeardownTask(BaseTask):
     """
     TYPE = 'teardown'
 
-    def __init__(self, machines: typing.List[Machine], *args, **kwargs):
+    def __init__(self, machines, *args, **kwargs):
         super(TeardownTask, self).__init__(machines, *args, **kwargs)
 
     async def routine(self):

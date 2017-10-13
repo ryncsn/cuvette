@@ -6,7 +6,6 @@ import logging
 from datetime import datetime
 from datetime import timedelta
 from cuvette.inspectors.base import InspectorBase, flat_filter
-from cuvette.pool.machine import Machine
 
 MAX_LIFESPAN = 1209600
 
@@ -59,7 +58,7 @@ class Inspector(InspectorBase):
         },
     }
 
-    async def inspect(self: InspectorBase, machine: Machine, conn):
+    async def inspect(self: InspectorBase, machine, conn):
         """
         This inspector won't detect anything as all properties should be provide by provisioner
         Else we have a broken provisioner.

@@ -9,7 +9,7 @@ import logging
 from datetime import datetime
 from motor.motor_asyncio import AsyncIOMotorCollection
 
-from cuvette.pool import main_pool, failure_pool
+from cuvette.pool import get_main_pool, get_failure_pool
 from cuvette.tasks.base import Tasks
 
 logger = logging.getLogger(__name__)
@@ -21,41 +21,21 @@ class Machine(dict):
     """
 
     @classmethod
-    async def find_all(cls, query={}, pool=None, count=None, **kwargs):
+    async def find_all(cls, db, query={}, count=None, pool=None, **kwargs):
         """
         We are likely to have a upbound of less than 1000 machines,
         so returning a list is fine for performance.
         """
-        pool = pool or main_pool
+        pool = pool or get_main_pool(db)
         return [
-            cls(machine) for machine in await pool.find(query, **kwargs).to_list(count)]
+            cls(db, machine) for machine in await pool.find(query, **kwargs).to_list(count)]
 
     @classmethod
-    async def find_one(cls, query={}, pool=None, **kwargs):
-        pool = pool or main_pool
-        return cls(await pool.find_one(query, **kwargs))
+    async def find_one(cls, db, query={}, pool=None, **kwargs):
+        pool = pool or get_main_pool(db)
+        return cls(db, await pool.find_one(query, **kwargs))
 
-    @staticmethod
-    async def setup(*_, **kwargs):
-        return main_pool.create_index("hostname", unique=True)
-
-    @property
-    def meta(self):
-        return self['meta']
-
-    @property
-    def tasks(self):
-        ret = []
-        for task_uuid in self['tasks'].keys():
-            task = Tasks.get(task_uuid)
-            if not task:
-                logger.error('Dropped dead task: {}'.format(task_uuid))
-                self['tasks'].pop(task_uuid)
-            else:
-                ret.append(task)
-        return ret
-
-    def __init__(self, *args,
+    def __init__(self, db, *args,
                  hostname: str = None,
                  magic: str = None,
                  provisioner: str = None,
@@ -89,7 +69,24 @@ class Machine(dict):
 
         self.update(kwargs)
 
-        self._connection = None
+        self._db = db
+
+    @property
+    def meta(self):
+        return self['meta']
+
+    @property
+    def tasks(self):
+        # TODO: move to Task.from_machine
+        ret = []
+        for task_uuid in self['tasks'].keys():
+            task = Tasks.get(task_uuid)
+            if not task:
+                logger.error('Dropped dead task: {}'.format(task_uuid))
+                self['tasks'].pop(task_uuid)
+            else:
+                ret.append(task)
+        return ret
 
     def __setitem__(self, item, value):
         dict.__setitem__(self, item, value)
@@ -130,9 +127,8 @@ class Machine(dict):
         """
         Save this machine to a pool
         """
-        pool = pool or main_pool
+        pool = pool or get_main_pool(self._db)
         self.self_check()
-        print(self)
         if self.get('_id', None) is None:
             await pool.insert_one(self)
         else:
@@ -146,8 +142,8 @@ class Machine(dict):
         Delete this machine from all pools
         """
         self['status'] = 'deleted'
-        await main_pool.delete_one(self._ident())
-        await failure_pool.delete_one(self._ident())
+        await get_main_pool(self._db).delete_one(self._ident())
+        await get_failure_pool(self._db).delete_one(self._ident())
 
     async def fail(self):
         """
@@ -155,4 +151,4 @@ class Machine(dict):
         """
         self['status'] = 'failed'
         await self.delete()
-        await self.save(failure_pool)
+        await self.save(get_failure_pool(self._db))

@@ -5,7 +5,6 @@ import typing
 import logging
 
 from cuvette.provisioners.base import ValidateError, ProvisionerBase
-from cuvette.pool.machine import Machine
 
 from .beaker import query_to_xml, execute_beaker_job, parse_machine_info, cancel_beaker_job
 from .convertor import ACCEPT_PARAMS
@@ -43,7 +42,7 @@ class Provisioner(ProvisionerBase):
         else:
             return 100
 
-    async def provision(self, machines: typing.List[Machine], query: dict):
+    async def provision(self, machines, query: dict):
         """
         Trigger the provision with given query
         """
@@ -58,7 +57,7 @@ class Provisioner(ProvisionerBase):
             machines[idx].update(machine_info)
             machines[idx].meta['beaker-job-id'] = job_id
 
-    async def teardown(self, machines: typing.List[Machine], query: dict):
+    async def teardown(self, machines, query: dict):
         """
         Teardown a machine provisioned from beaker,
         If user have deployed some service need to be teared down,
@@ -72,7 +71,7 @@ class Provisioner(ProvisionerBase):
         for job in jobs:
             await cancel_beaker_job(job)
 
-    async def is_teareddown(self, machine: Machine, meta: dict, query: dict):
+    async def is_teareddown(self, machine, meta: dict, query: dict):
         """
         Trigger the provision with given query
         """

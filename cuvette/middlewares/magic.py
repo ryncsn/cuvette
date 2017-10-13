@@ -50,7 +50,7 @@ class Magic(object):
         last_machine_magic = self.session.get('last_machine_magic')
 
         if request_hash == last_request_hash and last_machine_magic:
-            machines = await Machine.find_all({
+            machines = await Machine.find_all(self.request.app['db'], {
                 'magic': last_machine_magic
             })
             if machines:

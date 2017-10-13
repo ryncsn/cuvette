@@ -2,7 +2,6 @@
 Inspect a machine's CPU
 """
 from cuvette.inspectors.base import InspectorBase
-from cuvette.pool.machine import Machine
 
 
 class Inspector(InspectorBase):
@@ -20,7 +19,7 @@ class Inspector(InspectorBase):
         },
     }
 
-    async def inspect(cls, machine: Machine, conn):
+    async def inspect(cls, machine, conn):
         # TODO
         if 'disk-total_size' not in machine.keys():
             raise Exception()

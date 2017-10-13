@@ -5,8 +5,6 @@ import logging
 import asyncssh
 
 from cuvette.utils import find_all_sub_module, load_all_sub_module
-from cuvette.pool import failure_pool
-from cuvette.pool.machine import Machine
 
 logger = logging.getLogger(__name__)
 
@@ -30,11 +28,12 @@ def get_all_parameters():
 Parameters = get_all_parameters()
 
 
-async def perform_check(machine: Machine):
+async def perform_check(machine):
     try:
         async with asyncssh.connect(machine['hostname'],
                                     known_hosts=None,
-                                    username='root') as conn:
+                                    username='root',
+                                    ) as conn:
             # TODO: Disabled host key checking
             # TODO: Accept password
             # TODO: Accept username

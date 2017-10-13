@@ -5,10 +5,8 @@ Some jobs are synchronous, let them run in executor
 """
 import logging
 import asyncio
-import typing
 
 from cuvette.tasks import BaseTask
-from cuvette.pool.machine import Machine
 from cuvette.inspectors import perform_check
 
 logger = logging.getLogger(__name__)
@@ -20,7 +18,7 @@ class ReserveTask(BaseTask):
     """
     TYPE = 'reserve'
 
-    def __init__(self, machines: typing.List[Machine], reserve_time, *args, **kwargs):
+    def __init__(self, machines, reserve_time, *args, **kwargs):
         super(ReserveTask, self).__init__(machines, *args, **kwargs)
         self.reserve_time = reserve_time
         self.meta['reserve_time'] = reserve_time

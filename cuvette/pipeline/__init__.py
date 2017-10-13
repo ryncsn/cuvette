@@ -85,7 +85,9 @@ class Pipeline(object):
         for inspector in Inspectors.values():
             composed_filter.update(inspector.hard_filter(query_params))
 
-        return [Machine(m) for m in await Machine.find_all(composed_filter, count=count)]
+        return await Machine.find_all(
+            self.request.app['db'],
+            composed_filter, count=count)
 
     async def provision(self, query_params: dict, timeout=5, count=None):
         """
@@ -93,7 +95,7 @@ class Pipeline(object):
         else run the task async.
         """
         # Currently, only return one machine one time
-        machine = Machine()
+        machine = Machine(self.request.app['db'])
 
         for inspector in Inspectors.values():
             query_params = inspector.provision_filter(query_params)

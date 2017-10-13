@@ -23,7 +23,7 @@ async def startup(app: web.Application):
     logger = logging.getLogger('cuvette')
     logger.setLevel(logging.DEBUG)
     logger.info("Info Cuvette starting...")
-    pool_setup(asyncio.get_event_loop())
+    pool_setup(asyncio.get_event_loop(), app)
 
 
 async def cleanup(app: web.Application):

@@ -121,7 +121,7 @@ class MachineView(object):
         else:
             return web.json_response({
                 'message': 'Failed to find or provision a machine'
-            }, 404)
+            }, status=404)
 
     @staticmethod
     async def provision(request):

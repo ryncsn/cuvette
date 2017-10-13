@@ -4,9 +4,6 @@ Async Executor for tasks.
 Some jobs are synchronous, let them run in executor
 """
 import logging
-import typing
-
-from cuvette.pool.machine import Machine
 
 from cuvette.provisioners.base import sanitize_query
 from cuvette.inspectors import perform_check
@@ -21,7 +18,7 @@ class ProvisionTask(BaseTask):
     """
     TYPE = 'provision'
 
-    def __init__(self, machines: typing.List[Machine], provisioner, query, *args, **kwargs):
+    def __init__(self, machines, provisioner, query, *args, **kwargs):
         super(ProvisionTask, self).__init__(machines, *args, **kwargs)
         self.provisioner = provisioner
         self.query = query
