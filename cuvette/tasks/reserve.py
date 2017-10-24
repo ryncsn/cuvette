@@ -18,10 +18,11 @@ class ReserveTask(BaseTask):
     """
     TYPE = 'reserve'
 
-    def __init__(self, machines, reserve_time, *args, **kwargs):
+    def __init__(self, machines, reserve_time: int, *args, reserve_purpose: str="", **kwargs):
         super(ReserveTask, self).__init__(machines, *args, **kwargs)
         self.reserve_time = reserve_time
         self.meta['reserve_time'] = reserve_time
+        self.meta['reserve_purpose'] = reserve_purpose
 
     async def on_success(self):
         for machine in self.machines:

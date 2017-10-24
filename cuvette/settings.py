@@ -37,6 +37,8 @@ class Settings(object):
         'job-ksappend': DEFAULT_KS_APPEND
     }  # TODO: Shouldn't be here, will move it to a better place later
 
+    BEAKER_URL = 'https://example.com'
+
     DB_NAME = Required(str)
     DB_USER = Required(str)
     DB_PASSWORD = Required(str)

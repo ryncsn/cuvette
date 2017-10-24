@@ -1,6 +1,4 @@
 import abc
-import typing
-
 
 ALWAYS_GREEDY = True
 ALWAYS_UNTRUST = True

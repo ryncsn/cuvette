@@ -13,7 +13,7 @@ from .convertor import convert_query_to_beaker_xml
 logger = logging.getLogger(__name__)
 
 
-BEAKER_URL = ""
+BEAKER_URL = Settings.BEAKER_URL
 
 
 async def bkr_command(*args, input=None):
@@ -60,8 +60,13 @@ async def execute_beaker_job(job_xml: str):
                 await asyncio.sleep(55)
                 attempt += 1
                 logger.info("Checking status of job %s (attempt %s)", task_url, attempt)
-                active_job_xml_str = await bkr_command('job-results', job_id)
-                active_job_xml = etree.fromstring(active_job_xml_str)
+                for _ in range(5):  # Try to fetch for multiple times
+                    try:
+                        active_job_xml_str = await bkr_command('job-results', job_id)
+                        active_job_xml = etree.fromstring(active_job_xml_str)
+                        break
+                    except Exception:
+                        await asyncio.sleep(10)
                 recipes = list(map(lambda x: dict(x.attrib), active_job_xml.xpath('//recipe')))
                 if not recipes:
                     logger.error("Can't find valid recipe: {}".format(active_job_xml_str))
@@ -94,6 +99,9 @@ async def parse_machine_info(recipe: str):
 
     NS_INV = 'https://fedorahosted.org/beaker/rdfschema/inventory#'
     NS_INV = '{%s}' % NS_INV
+
+    NS_RDF = 'http://www.w3.org/1999/02/22-rdf-syntax-ns#'
+    NS_RDF = '{%s}' % NS_RDF
 
     ret = {}
 
@@ -169,11 +177,21 @@ async def parse_machine_info(recipe: str):
     ret['beaker-distro_variant'] = recipe['variant']
     ret['hostname'] = recipe['system']
 
-    recipe_detail_xml_str = await bkr_command('system-details', recipe['system'])
+    for _ in range(5):  # retry 5 times
+        try:
+            recipe_detail_xml_str = await bkr_command('system-details', recipe['system'])
+            recipe_detail = etree.fromstring(bytes(recipe_detail_xml_str, 'utf8'))
+            break
+        except Exception:
+            await asyncio.sleep(10)
 
-    recipe_detail = etree.fromstring(bytes(recipe_detail_xml_str, 'utf8'))
+    system = recipe_detail.find('{}System'.format(NS_INV))
+    controlled_by = system.find('{}controlledBy'.format(NS_INV))
+    lab_controller = controlled_by.find('{}LabController'.format(NS_INV))
+    lab_controller_url = lab_controller.get('{}about'.format(NS_RDF))
+    lab_controller = lab_controller_url.split('/')[-1].split('#')[0]
 
-    system = recipe_detail.find('{}System'.format(NS_INV))  # error on multiple?
+    ret['lab_controller'] = lab_controller
 
     for tag, meta in system_tag_map.items():
         key = meta['name']

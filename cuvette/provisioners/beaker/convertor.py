@@ -97,7 +97,7 @@ def boilerplate_job(query: dict):
     job.set('group', DEFAULTS['job-group'])  # TODO: value from query
 
     whiteboard = etree.SubElement(job, 'whiteboard')
-    whiteboard.text = DEFAULTS['job-whiteboard']  # TODO: value from query
+    whiteboard.text = query.get('whiteboard', DEFAULTS['job-whiteboard'])  # TODO: value from query
 
     return job
 

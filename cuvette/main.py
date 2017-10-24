@@ -23,7 +23,7 @@ BASE_DIR = THIS_DIR.parent
 async def startup(app: web.Application):
     logging.basicConfig(level=logging.DEBUG)
     logger = logging.getLogger('cuvette')
-    logger.setLevel(logging.DEBUG)
+    logger.setLevel(logging.INFO)
     logger.info("Info Cuvette starting...")
     pool_setup(asyncio.get_event_loop(), app)
 
