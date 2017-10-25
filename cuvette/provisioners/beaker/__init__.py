@@ -11,6 +11,8 @@ from .convertor import ACCEPT_PARAMS
 
 logger = logging.getLogger(__name__)
 
+DEFAULT_LIFE_SPAN = 86400
+
 
 class Provisioner(ProvisionerBase):
     name = 'beaker'
@@ -42,11 +44,11 @@ class Provisioner(ProvisionerBase):
         else:
             return 100
 
-    async def provision(self, machines, query: dict):
+    async def provision(self, machines, sanitized_query: dict):
         """
         Trigger the provision with given query
         """
-        job_xml = query_to_xml(query)
+        job_xml = query_to_xml(sanitized_query)
         job_id, recipes = await execute_beaker_job(job_xml)
         if not len(recipes) == len(machines):
             logger.error("Expecting {} machine(s), but got {} machine(s)".format(
@@ -54,6 +56,7 @@ class Provisioner(ProvisionerBase):
             ))
         for idx, recipe in enumerate(recipes):
             machine_info = await parse_machine_info(recipe)
+            machines['lifespan'].sanitized_query.get('lifespan', DEFAULT_LIFE_SPAN)
             machines[idx].update(machine_info)
             machines[idx].meta['beaker-job-id'] = job_id
 

@@ -318,6 +318,8 @@ def add_reserve_task(recipe: Element, sanitized_query: dict):
     task_param.set('name', 'RESERVETIME')
     task_param.set('value', str(reserve_time * 2))
 
+    sanitized_query['lifespan'] = reserve_time * 2
+
 
 def fill_boilerplate_recipe(recipe: Element, sanitized_query: dict):
     # Some default params

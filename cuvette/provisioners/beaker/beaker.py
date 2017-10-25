@@ -30,11 +30,11 @@ async def cancel_beaker_job(job_id: str):
     await bkr_command('job-cancel', job_id)
 
 
-def query_to_xml(query: dict) -> str:
+def query_to_xml(sanitized_query: dict) -> str:
     """
     Convert a query to XML that could be recognized by beaker
     """
-    return convert_query_to_beaker_xml(query)
+    return convert_query_to_beaker_xml(sanitized_query)
 
 
 async def execute_beaker_job(job_xml: str):
