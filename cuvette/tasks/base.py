@@ -32,16 +32,21 @@ class BaseTask(metaclass=abc.ABCMeta):
     """
     TYPE = 'base'
 
-    def __init__(self, machines, loop=None):
+    def __init__(self, machines, query: dict=None, loop=None):
         self.loop = loop or asyncio.get_event_loop()
         self.uuid = str(uuid.uuid1())
-        # Machines this task may related to, if task failed, all related machine will be
+        # Machines this task related to, if task failed, all related machine will be
         # moved to failure pool
         self.machines = machines
         # If not None, a async task is running and when task.cancel() is called, this
         # future is cancelled
         self.future = None
+        # Task status, task should be reentrant, but we still keep a status attribute for now
+        # for easier tracking, status should be pending, running, success, failed
         self.status = 'pending'
+        # the query object that issued this task, could be None for pool scheduled task
+        self.query = query
+        # Some metadata that could be used for task routine and reentrant
         self.meta = {}
 
         Tasks[self.uuid] = self
