@@ -37,7 +37,7 @@ async def tear_me_down(request):
         }
     })
 
-    if machines and len(machines) > 1:
+    if machines and len(machines) > 0:
         return web.json_response(machines)
     else:
         return web.json_response({
@@ -58,7 +58,7 @@ async def release_me(request):
         }
     })
 
-    if machines and len(machines) > 1:
+    if machines and len(machines) > 0:
         return web.json_response(machines)
     else:
         return web.json_response({
@@ -79,7 +79,7 @@ async def describ_me(request):
         }
     })
 
-    if machines and len(machines) > 1:
+    if machines and len(machines) > 0:
         return web.json_response(machines)
     else:
         return web.json_response({
