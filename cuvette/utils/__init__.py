@@ -67,8 +67,6 @@ def format_to_json(data, failover=None):
         return data.as_dict()
     elif hasattr(data, '__iter__') and not inspect.isclass(data):
         return [format_to_json(_value, failover=failover) for _value in data]
-    elif callable(data):
-        return 'function'
     else:
         return failover(data)
 

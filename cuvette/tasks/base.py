@@ -22,7 +22,7 @@ class Executor(ThreadPoolExecutor):
         self.uuid = str(uuid.uuid1())
 
 
-class BaseTask(metaclass=abc.ABCMeta):
+class BaseTask(object, metaclass=abc.ABCMeta):
     """
     Used to keep tracking asyncio task so we can cancel it when we want.
 

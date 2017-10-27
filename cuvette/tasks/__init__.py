@@ -4,7 +4,7 @@ Provisoiners
 import logging
 
 from cuvette.tasks.base import BaseTask, Tasks
-from cuvette.utils import load_all_sub_module
+from cuvette.utils.parameters import get_all_parameters
 from .provision import ProvisionTask
 from .inspect import InspectTask
 from .reserve import ReserveTask
@@ -34,15 +34,7 @@ async def retrive_tasks_from_machine(machine):
     return ret
 
 
-def get_all_parameters():
-    """
-    Return a dictionary descripting the parameters provided by all inspectors
-    """
-    ret = {}
-    for task in [ProvisionTask, InspectTask, ReserveTask, TeardownTask]:
-        for key, value in task.PARAMETERS.items():
-            ret[key] = value
-    return ret
-
-
-Parameters = get_all_parameters()
+Parameters = get_all_parameters(
+    [ProvisionTask, InspectTask, ReserveTask, TeardownTask], 'task',
+    name_getter=lambda task: str(task)
+)

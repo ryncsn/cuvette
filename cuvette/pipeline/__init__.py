@@ -13,8 +13,9 @@ import cuvette.transformers as transformers
 import cuvette.provisioners as provisioners
 
 from cuvette.pool.machine import Machine
-from cuvette.tasks import ProvisionTask, ReserveTask, Tasks, retrive_tasks_from_machine
+from cuvette.tasks import ProvisionTask, ReserveTask, retrive_tasks_from_machine
 from cuvette.tasks import Parameters as TaskParameters
+from cuvette.utils.parameters import check_and_merge_parameter
 
 
 Inspectors = inspectors.Inspectors
@@ -47,26 +48,12 @@ def setup_parameters():
     task_parameters = TaskParameters.copy()
 
     # Append inspector_parameters first
-    parameters = inspector_parameters.copy()
+    parameters = {}
 
-    # Check and append provision parameters
-    for param_name, param_meta in provisioner_parameters.items():
-        inspecter_param_meta = inspector_parameters.get(param_name)
-        if not inspecter_param_meta:
-            logger.error('Parameter "%s" of provisioner "%s" is not inspected by any inspector',
-                         param_name, param_meta['source'])
-            parameters[param_name] = param_meta.copy()
-        else:
-            KEYS_TO_CHECK = ['type']
-            for key in KEYS_TO_CHECK:
-                if inspecter_param_meta.get(key) != param_meta.get(key):
-                    logger.error('Different declaration for %s\n'
-                                 'inspectors give:\n %s\n'
-                                 'provisioner %s gives:\n %s\n',
-                                 param_name, inspecter_param_meta, param_meta['source'], param_meta)
-                    break
-
-    parameters.update(task_parameters)
+    check_and_merge_parameter(parameters, pipiline_parameters)
+    check_and_merge_parameter(parameters, inspector_parameters)
+    check_and_merge_parameter(parameters, provisioner_parameters)
+    check_and_merge_parameter(parameters, task_parameters)
 
     return parameters
 
@@ -168,9 +155,7 @@ class Pipeline(object):
                 if task.TYPE == 'reserve':
                     task.cancel()
                     released = True
-                    print("Release task cancelled")
             if released:
-                print("Machine appnede")
                 ret.append(machine)
         return ret
 

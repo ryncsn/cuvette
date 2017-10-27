@@ -4,6 +4,7 @@ Provisoiners
 import logging
 
 from cuvette.utils import find_all_sub_module, load_all_sub_module, sanitize_query
+from cuvette.utils.parameters import get_all_parameters
 
 logger = logging.getLogger(__name__)
 
@@ -12,19 +13,10 @@ __all__ = find_all_sub_module(__file__, exclude=['base'])
 Provisioners = dict((k, v.Provisioner()) for k, v in load_all_sub_module(__name__).items())
 
 
-def get_all_parameters():
-    """
-    Return a dictionary descripting the parameters provided by all inspectors
-    """
-    ret = {}
-    for provisioner in Provisioners.values():
-        for key, value in provisioner.PARAMETERS.items():
-            ret[key] = value
-            ret[key].setdefault('source', []).append(provisioner.NAME)
-    return ret
-
-
-Parameters = get_all_parameters()
+Parameters = get_all_parameters(Provisioners.values(),
+                                'provisoiner',
+                                name_getter=lambda module: module.NAME,
+                                exclude_keys=['description'])
 
 
 def find_avaliable(query):

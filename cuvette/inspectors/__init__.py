@@ -7,6 +7,7 @@ import logging
 import asyncssh
 
 from cuvette.utils import find_all_sub_module, load_all_sub_module
+from cuvette.utils.parameters import get_all_parameters
 
 logger = logging.getLogger(__name__)
 
@@ -36,21 +37,9 @@ def load_all_keys():
     return keys
 
 
-def get_all_parameters():
-    """
-    Return a dictionary descripting the parameters provided by all inspectors
-    """
-    ret = {}
-    for inspector in Inspectors.values():
-        for key, value in inspector.PARAMETERS.items():
-            if key in ret.keys():
-                logger.warn('Found duplicated parameter %s', key)
-            ret[key] = value
-            ret[key].setdefault('source', []).append(str(inspector))
-    return ret
-
-
-Parameters = get_all_parameters()
+Parameters = get_all_parameters(Inspectors.values(), 'inspectors',
+                                name_getter=lambda inspector: str(inspector),
+                                conflict=True)
 
 
 async def perform_check(machine):

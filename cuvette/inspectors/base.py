@@ -73,7 +73,7 @@ def flat_filter(self, query: dict):
     return ret
 
 
-class InspectorBase(metaclass=abc.ABCMeta):
+class InspectorBase(object, metaclass=abc.ABCMeta):
     PARAMETERS = abc.abstractproperty()
     """
     What parameters are provided by this Inspector

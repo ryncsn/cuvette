@@ -4,7 +4,7 @@ ALWAYS_GREEDY = True
 ALWAYS_UNTRUST = True
 
 
-class ProvisionerBase(metaclass=abc.ABCMeta):
+class ProvisionerBase(object, metaclass=abc.ABCMeta):
     PARAMETERS = abc.abstractproperty()
     NAME = abc.abstractproperty()
     """
