@@ -17,6 +17,18 @@ Parameters = get_all_parameters(Provisioners.values(),
                                 'provisoiner',
                                 name_getter=lambda module: module.NAME,
                                 exclude_keys=['description'])
+Parameters.update({
+    'provision-count': {
+        'type': int,
+        'ops': [None],
+        'default': lambda query: query.get('count') or 1
+    },
+    'provision-lifespan': {
+        'type': int,
+        'ops': [None],
+        'default': lambda query: max(int(query.get('lifespan') or query.get('lifetime') or 0), 86400) * 2
+    }
+})
 
 
 def find_avaliable(query):

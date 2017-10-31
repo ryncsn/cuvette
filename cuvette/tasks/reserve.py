@@ -18,6 +18,11 @@ class ReserveTask(BaseTask):
     """
     TYPE = 'reserve'
     PARAMETERS = {
+        'reserve-duration': {
+            'type': int,
+            'op': [None],
+            'default': lambda query: query.get('lifetime') or 86400
+        },
         'reserve-count': {
             'type': int,
             'op': [None],
@@ -30,11 +35,11 @@ class ReserveTask(BaseTask):
         }
     }
 
-    def __init__(self, machines, reserve_time: int, *args, reserve_purpose: str="", **kwargs):
-        super(ReserveTask, self).__init__(machines, *args, **kwargs)
-        self.reserve_time = reserve_time
-        self.meta['reserve_time'] = reserve_time
-        self.meta['reserve_purpose'] = reserve_purpose
+    def __init__(self, machines, query, *args, **kwargs):
+        super(ReserveTask, self).__init__(machines, query, *args, **kwargs)
+        self.reserve_duration = query['reserve-duration']
+        self.meta['reserve-duration'] = self.reserve_duration
+        self.meta['reserve-whiteboard'] = query['reserve-whiteboard']
 
     async def on_done(self):
         for machine in self.machines:
@@ -47,7 +52,7 @@ class ReserveTask(BaseTask):
             machine['status'] = 'reserved'
             await machine.save()
         try:
-            await asyncio.sleep(self.reserve_time)
+            await asyncio.sleep(self.reserve_duration)
         except Exception as error:
             # Most likely cancelled
             logger.exception(error)

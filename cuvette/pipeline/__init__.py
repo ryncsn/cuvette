@@ -31,7 +31,7 @@ logger = logging.getLogger(__name__)
 PIPELINE_PARAMETERS = {
     'count': {
         'type': int,
-        'op': [None],
+        'ops': [None],
         'default': 1,
     }
 }
@@ -84,62 +84,64 @@ class Pipeline(object):
         """
         self.request = request
 
-    async def query(self, query_params: dict, count=None):
+    async def query(self, query_params: dict):
         """
         Return if there is any machine matches required query or
         return the already provisining machine.
         """
+        count = query_params['count']
         query_params = copy.deepcopy(query_params)
         composed_filter = {}
+
         for inspector in Inspectors.values():
             composed_filter.update(inspector.hard_filter(query_params))
 
-        return await Machine.find_all(
+        machines = await Machine.find_all(
             self.request.app['db'],
-            composed_filter, count=count)
+            composed_filter, count)
+
+        if len(machines) < count:
+            return None
+        return machines
 
     async def provision(self, query_params: dict, timeout=5, count=None):
         """
         Block for timeout time for the provision to finish,
         else run the task async.
         """
-        # Currently, only return one machine one time
-        machine = Machine(self.request.app['db'])
+        count = query_params['count']
+
+        machines = [Machine(self.request.app['db']) for _ in range(count)]
 
         for inspector in Inspectors.values():
             query_params = inspector.provision_filter(query_params)
 
-        await self.request['magic'].pre_provision(machine, query_params)
+        await self.request['magic'].pre_provision(machines, query_params)
 
         min_cost_provisioner = provisioners.find_avaliable(query_params)
 
         if min_cost_provisioner:
-            logger.debug('Selected provisioner %s to provision new machine', min_cost_provisioner.name)
-            provision_task = ProvisionTask([machine], min_cost_provisioner, query_params)
+            logger.debug('Selected provisioner %s to provision new machine', min_cost_provisioner.NAME)
+            provision_task = ProvisionTask(machines, query_params, min_cost_provisioner)
             finished, pending = await asyncio.wait([provision_task.run()], timeout=timeout)
             if finished:
-                return [machine]
+                return machines
             else:
-                return [machine]
+                return machines
         else:
             return {'message': 'Failed to provision a machine, as no one machine matched your need, '
                     'or there are zero machine.'}
 
-    async def reserve(self, query_params: dict, reserve_time=3600, count=None, greedy=False):
+    async def reserve(self, query_params: dict):
         """
         Reserve a machine, if greedy, reserve as much as possible without checking
         """
-        try:
-            reserve_time = int(query_params.pop('reserve_time', reserve_time))
-        except Exception:
-            raise RuntimeError('reserve_time not specified or illegal')
-        machines = await self.query(query_params, count=count)
-        if not greedy:
-            for machine in machines:
-                if machine['tasks']:
-                    raise RuntimeError("Can't reserve machine {} {} with tasks".format(
-                        machine.get('hostname', 'no-host'), machine.get('magic', 'no-magic')))
-        reserve_task = ReserveTask(machines, reserve_time)
+        machines = await self.query(query_params)
+        for machine in machines:
+            if machine['tasks']:
+                raise RuntimeError("Can't reserve machine {} {} with tasks".format(
+                    machine.get('hostname', 'no-host'), machine.get('magic', 'no-magic')))
+        reserve_task = ReserveTask(machines, query_params)
         asyncio.ensure_future(reserve_task.run())
         return machines
 

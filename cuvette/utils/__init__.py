@@ -258,7 +258,11 @@ def sanitize_query(query: dict, accept_params: dict):
                         query[key][op] = allowed_type(value)
                     except Exception:
                         raise ValidateError('Unaccptable value type {} for {}'.format(type(value), key))
-        elif isinstance(item, str):
-            if allowed_ops is not None and '$eq' in allowed_ops:
-                query[key] = {'$eq': item}
+        elif item is not None:
+            if allowed_ops is None or None in allowed_ops:
+                query[key] = item
+            else:  # TODO Support other ops
+                query[key] = {
+                    '$eq': item
+                }
     return query

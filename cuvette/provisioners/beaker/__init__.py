@@ -56,7 +56,7 @@ class Provisioner(ProvisionerBase):
             ))
         for idx, recipe in enumerate(recipes):
             machine_info = await parse_machine_info(recipe)
-            machines['lifespan'].sanitized_query.get('lifespan', DEFAULT_LIFE_SPAN)
+            machines[idx]['lifespan'].sanitized_query.get('provision-lifespan', DEFAULT_LIFE_SPAN)
             machines[idx].update(machine_info)
             machines[idx].meta['beaker-job-id'] = job_id
 

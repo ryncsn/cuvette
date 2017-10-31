@@ -74,10 +74,6 @@ ACCEPT_PARAMS = {
     'location': {
         'ops': [None],
     },
-    'lifetime': {
-        'type': int,
-        'ops': [None],
-    },
 }
 
 
@@ -312,11 +308,9 @@ def add_reserve_task(recipe: Element, sanitized_query: dict):
     task_param = etree.SubElement(task_params, 'param')
     task_param.set('name', 'RSTRNT_DISABLED')
     task_param.set('value', '01_dmesg_check 10_avc_check')
-    reserve_time = sanitized_query.get('lifetime', 86400)
-    if reserve_time < 86400:
-        reserve_time = 86400
+    reserve_time = sanitized_query.get('provision-lifespan', 86400)
     task_param.set('name', 'RESERVETIME')
-    task_param.set('value', str(reserve_time * 2))
+    task_param.set('value', reserve_time)
 
     sanitized_query['lifespan'] = reserve_time * 2
 
@@ -361,11 +355,10 @@ def convert_query_to_beaker_xml(sanitized_query: dict):
     recipe_set.set('priority', 'Normal')
 
     # Always only one recipe
-    recipe = etree.SubElement(recipe_set, 'recipe')
-
-    fill_boilerplate_recipe(recipe, sanitized_query)
-
-    add_reserve_task(recipe, sanitized_query)
+    for _ in range(sanitized_query.get('provision-count', 1)):
+        recipe = etree.SubElement(recipe_set, 'recipe')
+        fill_boilerplate_recipe(recipe, sanitized_query)
+        add_reserve_task(recipe, sanitized_query)
 
     pretty_xml = minidom.parseString(etree.tostring(job)).toprettyxml(indent="  ")
     return pretty_xml

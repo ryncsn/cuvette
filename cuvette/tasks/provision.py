@@ -30,18 +30,17 @@ class ProvisionTask(BaseTask):
         }
     }
 
-    def __init__(self, machines, provisioner, query, *args, **kwargs):
-        super(ProvisionTask, self).__init__(machines, *args, **kwargs)
+    def __init__(self, machines, query, provisioner, *args, **kwargs):
+        super(ProvisionTask, self).__init__(machines, query, *args, **kwargs)
         self.provisioner = provisioner
-        self.query = query
+        self.query = sanitize_query(self.query, self.provisioner.PARAMETERS)
 
     async def routine(self):
-        sanitized_query = sanitize_query(self.query, self.provisioner.accept)
         for machine in self.machines:
-            machine['provisioner'] = self.provisioner.name
+            machine['provisioner'] = self.provisioner.NAME
             machine['status'] = 'preparing'
             await machine.save()
-        await self.provisioner.provision(self.machines, sanitized_query)
+        await self.provisioner.provision(self.machines, self.query)
         for machine in self.machines:
             await perform_check(machine)
             machine['status'] = 'ready'
