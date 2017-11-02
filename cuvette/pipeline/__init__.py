@@ -84,12 +84,13 @@ class Pipeline(object):
         """
         self.request = request
 
-    async def query(self, query_params: dict):
+    async def query(self, query_params: dict, nocount=None):
         """
         Return if there is any machine matches required query or
         return the already provisining machine.
         """
         count = query_params['count']
+
         query_params = copy.deepcopy(query_params)
         composed_filter = {}
 
@@ -98,25 +99,27 @@ class Pipeline(object):
 
         machines = await Machine.find_all(
             self.request.app['db'],
-            composed_filter, count)
+            composed_filter, None if nocount else count)
 
-        if len(machines) < count:
-            return None
         return machines
 
     async def provision(self, query_params: dict, timeout=5, count=None):
         """
         Block for timeout time for the provision to finish,
-        else run the task async.
+        elsy run the task async.
         """
         count = query_params['count']
-
         machines = [Machine(self.request.app['db']) for _ in range(count)]
 
         for inspector in Inspectors.values():
             query_params = inspector.provision_filter(query_params)
 
+        # Magic deal with the problem that browser keep sending request
+        # Result in tons of request job
         await self.request['magic'].pre_provision(machines, query_params)
+
+        for machine in machines:
+            await machine.save()
 
         min_cost_provisioner = provisioners.find_avaliable(query_params)
 

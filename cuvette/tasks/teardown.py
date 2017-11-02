@@ -18,8 +18,8 @@ class TeardownTask(BaseTask):
     """
     TYPE = 'teardown'
 
-    def __init__(self, machines, *args, **kwargs):
-        super(TeardownTask, self).__init__(machines, *args, **kwargs)
+    def __init__(self, machines, query, *args, **kwargs):
+        super(TeardownTask, self).__init__(machines, query, *args, **kwargs)
 
     async def routine(self):
         provisioner_machine_group = {}

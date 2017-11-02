@@ -9,6 +9,7 @@ import uuid
 import abc
 
 from concurrent.futures import ThreadPoolExecutor
+from cuvette.utils import sanitize_query
 
 logger = logging.getLogger(__name__)
 
@@ -46,7 +47,7 @@ class BaseTask(object, metaclass=abc.ABCMeta):
         # for easier tracking, status should be pending, running, success, failed
         self.status = 'pending'
         # the query object that issued this task, could be None for pool scheduled task
-        self.query = query
+        self.query = sanitize_query(query, self.PARAMETERS)
         # Some metadata that could be used for task routine and reentrant
         self.meta = {}
 

@@ -37,7 +37,11 @@ class Inspector(InspectorBase):
         "lifespan": {
             "type": int,
             "default_op": "$gte",
-            "description": "How long this machine will be avaliable"
+            "description": "How long a machine will be avaliable from the time it get provisioned"
+        },
+        "lifetime": {
+            "type": int,
+            "description": "How lone a machine will be avaliable from now on, time in seconds"
         },
         "start_time": {
             "type": datetime,
@@ -51,10 +55,6 @@ class Inspector(InspectorBase):
             "description": (
                 "When this machine will be expired"
             )
-        },
-        "lifetime": {
-            "type": int,
-            "description": "How lone a machine will be avaliable from now on, time in seconds"
         },
     }
 

@@ -57,10 +57,7 @@ class MachineView(object):
         query_params = sanitize_query(
             parse_query(parse_request_params(request.query)),
             Parameters)
-
-        # Magic deal with the problem that browser keep sending request
-        # Result in tons of request job
-        machines = await Pipeline(request).query(query_params)
+        machines = await Pipeline(request).query(query_params, nocount=True)
         return web.json_response([machine.to_json() for machine in machines])
 
     @staticmethod
@@ -85,7 +82,7 @@ class MachineView(object):
             parse_query(parse_request_params(request.query)),
             Parameters)
         data = []
-        machines = await Pipeline(request).query(query_params)
+        machines = await Pipeline(request).query(query_params, nocount=True)
         for machine in machines:
             await machine.delete()
             data.append(machine.to_json())

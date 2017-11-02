@@ -21,7 +21,8 @@ class ReserveTask(BaseTask):
         'reserve-duration': {
             'type': int,
             'op': [None],
-            'default': lambda query: query.get('lifetime') or 86400
+            'default': lambda query: query.get('duration') or 86400,
+            'description': "Duration time for reservation in seconds"
         },
         'reserve-count': {
             'type': int,

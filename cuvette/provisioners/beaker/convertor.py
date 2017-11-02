@@ -310,7 +310,7 @@ def add_reserve_task(recipe: Element, sanitized_query: dict):
     task_param.set('value', '01_dmesg_check 10_avc_check')
     reserve_time = sanitized_query.get('provision-lifespan', 86400)
     task_param.set('name', 'RESERVETIME')
-    task_param.set('value', reserve_time)
+    task_param.set('value', str(reserve_time))
 
     sanitized_query['lifespan'] = reserve_time * 2
 

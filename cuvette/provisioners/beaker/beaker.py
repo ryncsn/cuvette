@@ -180,9 +180,11 @@ async def parse_machine_info(recipe: str):
     for _ in range(5):  # retry 5 times
         try:
             recipe_detail_xml_str = await bkr_command('system-details', recipe['system'])
+            logger.info(recipe_detail_xml_str)
             recipe_detail = etree.fromstring(bytes(recipe_detail_xml_str, 'utf8'))
             break
-        except Exception:
+        except Exception as error:
+            logger.exception("Get error while processing recipe result")
             await asyncio.sleep(10)
 
     system = recipe_detail.find('{}System'.format(NS_INV))
