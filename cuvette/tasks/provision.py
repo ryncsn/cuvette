@@ -6,7 +6,6 @@ Some jobs are synchronous, let them run in executor
 import logging
 
 from cuvette.inspectors import perform_check
-from cuvette.utils import sanitize_query
 from cuvette.tasks import BaseTask
 
 logger = logging.getLogger(__name__)
@@ -33,7 +32,6 @@ class ProvisionTask(BaseTask):
     def __init__(self, machines, query, provisioner, *args, **kwargs):
         super(ProvisionTask, self).__init__(machines, query, *args, **kwargs)
         self.provisioner = provisioner
-        self.query = sanitize_query(self.query, self.provisioner.PARAMETERS)
 
     async def routine(self):
         for machine in self.machines:

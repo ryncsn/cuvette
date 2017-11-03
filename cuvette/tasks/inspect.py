@@ -16,8 +16,8 @@ class InspectTask(BaseTask):
     """
     TYPE = 'inspect'
 
-    def __init__(self, machines, *args, **kwargs):
-        super(InspectTask, self).__init__(machines, *args, **kwargs)
+    def __init__(self, *args, **kwargs):
+        super(InspectTask, self).__init__(*args, **kwargs)
 
     async def routine(self):
         for machine in self.machines:

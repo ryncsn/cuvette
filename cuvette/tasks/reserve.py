@@ -38,7 +38,7 @@ class ReserveTask(BaseTask):
 
     def __init__(self, machines, query, *args, **kwargs):
         super(ReserveTask, self).__init__(machines, query, *args, **kwargs)
-        self.reserve_duration = query['reserve-duration']
+        self.reserve_duration = self.query['reserve-duration']
         self.meta['reserve-duration'] = self.reserve_duration
         self.meta['reserve-whiteboard'] = query['reserve-whiteboard']
 
