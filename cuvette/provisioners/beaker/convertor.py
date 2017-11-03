@@ -7,7 +7,7 @@ from lxml import etree
 from xml.dom import minidom
 from xml.etree.ElementTree import Element
 
-from cuvette.provisioners.base import ValidateError
+from cuvette.utils.exceptions import ValidateError
 from cuvette.settings import Settings
 
 
@@ -29,23 +29,23 @@ ACCEPT_PARAMS = {
     },
     'cpu-model': {
         'type': str,
-        'descript': 'CPU model',
+        'description': 'CPU model',
         'ops': ['$eq', '$in'],
     },
     'cpu-flags': {
-        'descript': 'CPU Flase need to be supported',
+        'description': 'CPU Flase need to be supported',
         'type': list,
         'ops': [None]
     },
     'memory-total_size': {
         'type': int,
         'ops': ['$eq', '$lt', '$gt', '$lte', '$gte'],
-        'descript': 'Size in MB',
+        'description': 'Size in MB',
     },
     'disk-total_size': {
         'type': int,
         'ops': ['$eq', '$lt', '$gt', '$lte', '$gte'],
-        'descript': 'Size in GB',
+        'description': 'Size in GB',
     },
     'disk-number': {
         'type': int,

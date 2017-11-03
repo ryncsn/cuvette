@@ -21,7 +21,7 @@ class Inspector(InspectorBase):
     """
     Inspect machine's CPU
     """
-    provide = {
+    PARAMETERS = {
         "cpu-arch": {
             "type": str,
             "description": ""

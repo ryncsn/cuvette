@@ -1,10 +1,10 @@
 """
 Plugin loader
 """
-import typing
 import logging
 
-from cuvette.provisioners.base import ValidateError, ProvisionerBase
+from cuvette.provisioners.base import ProvisionerBase
+from cuvette.utils.exceptions import ValidateError
 
 from .beaker import query_to_xml, execute_beaker_job, parse_machine_info, cancel_beaker_job
 from .convertor import ACCEPT_PARAMS
@@ -15,8 +15,8 @@ DEFAULT_LIFE_SPAN = 86400
 
 
 class Provisioner(ProvisionerBase):
-    name = 'beaker'
-    accept = ACCEPT_PARAMS
+    NAME = 'beaker'
+    PARAMETERS = ACCEPT_PARAMS
 
     def __init__(self):
         pass

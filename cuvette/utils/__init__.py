@@ -8,6 +8,8 @@ import importlib
 import glob
 import os
 
+from .exceptions import ValidateError
+
 
 def find_all_sub_module(init_path: str, exclude=[], extra=[]):
     """
@@ -48,6 +50,8 @@ def type_to_string(type_):
         return 'datetime'
     elif type_ is datetime.date:
         return 'date'
+    elif callable(type_):
+        return 'function'
     else:
         raise RuntimeError('Unrecognized type %s' % type_)
 
@@ -63,6 +67,8 @@ def format_to_json(data, failover=None):
         return data.as_dict()
     elif hasattr(data, '__iter__') and not inspect.isclass(data):
         return [format_to_json(_value, failover=failover) for _value in data]
+    elif callable(data):
+        return 'function'
     else:
         return failover(data)
 
@@ -200,3 +206,61 @@ def flatten_query(query: dict, force: bool = False):
                 continue
         if force:
             raise RuntimeError('{} only accept plain value'.format(key))
+
+
+def sanitize_query(query: dict, accept_params: dict):
+    """
+    Take a query and a dict describing the required format of the query,
+    check for mistake for format the query.
+
+    If there are some critical problem can be fixed, will raise an Exception.
+
+    Will override the origin content in query.
+
+    Expected format for accept_params:
+    {
+        'param-name': {
+            'type': bool,
+            'ops': ['$eq', '$lte', '$gt'],
+            'default': true,
+            'description': 'Optional decription',
+        },
+        'param-name2': {
+            'type': str,
+            'ops': [None],
+            'default': lambda query: str(query.get('param-name', 'debug')),
+        },
+    }
+
+    Expected format for query:
+    {
+        'param-name': {
+            '$eq': true,
+        },
+        'param-name2': 'debug',
+    }
+    """
+    _query = query.copy()
+
+    for key, params in accept_params.items():
+        allowed_type = params.get('type', None)
+        allowed_ops = params.get('ops', None)
+        default = params.get('default', None)
+        item = _query.pop(key,
+                          default(query) if callable(default)
+                          else default)
+        if isinstance(item, dict):
+            for op, value in item.items():
+                if allowed_ops is not None and op not in allowed_ops:
+                    raise ValidateError('Unaccptable operation {} for {}'.format(op, key))
+                if allowed_type is not None:
+                    if isinstance(value, allowed_type):
+                        continue
+                    try:
+                        query[key][op] = allowed_type(value)
+                    except Exception:
+                        raise ValidateError('Unaccptable value type {} for {}'.format(type(value), key))
+        elif isinstance(item, str):
+            if allowed_ops is not None and '$eq' in allowed_ops:
+                query[key] = {'$eq': item}
+    return query

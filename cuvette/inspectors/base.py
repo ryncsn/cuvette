@@ -22,7 +22,7 @@ def flat_match(self, machine, query: dict):
         '$gte': lambda x, val: x >= val,
     }
 
-    for prop, meta in self.provide.items():
+    for prop, meta in self.PARAMETERS.items():
         if prop not in query.keys():
             continue
         if prop not in machine.keys():
@@ -52,7 +52,7 @@ def flat_filter(self, query: dict):
 
     # TODO: op, default_op, default_value
 
-    for prop, meta in self.provide.items():
+    for prop, meta in self.PARAMETERS.items():
         if prop not in query.keys():
             # TODO: default value?
             continue
@@ -74,7 +74,7 @@ def flat_filter(self, query: dict):
 
 
 class InspectorBase(metaclass=abc.ABCMeta):
-    provide = abc.abstractproperty()
+    PARAMETERS = abc.abstractproperty()
     """
     What parameters are provided by this Inspector
     """

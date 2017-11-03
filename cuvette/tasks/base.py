@@ -31,6 +31,7 @@ class BaseTask(metaclass=abc.ABCMeta):
     Task should be stateless,
     """
     TYPE = 'base'
+    PARAMETERS = {}
 
     def __init__(self, machines, query: dict=None, loop=None):
         self.loop = loop or asyncio.get_event_loop()

@@ -17,7 +17,7 @@ class Inspector(InspectorBase):
     """
     Inspect machine's CPU
     """
-    provide = {
+    PARAMETERS = {
         "magic": {
             "description": "A surrogate key for each machine, could be a reserved keyword, currently "
             "reserved keywords are 'noprovision', 'new'",
@@ -81,7 +81,7 @@ class Inspector(InspectorBase):
             start_time = machine['start_time']
             lifespan = machine['lifespan']
             machine['expire_time'] = start_time + timedelta(seconds=lifespan)
-        for prop in self.provide.keys():
+        for prop in self.PARAMETERS.keys():
             if prop in ['lifetime']:
                 continue
             if machine.get(prop) is None:

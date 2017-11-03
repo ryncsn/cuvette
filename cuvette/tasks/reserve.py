@@ -17,6 +17,18 @@ class ReserveTask(BaseTask):
     The revervation task, wait for given time then the task is done
     """
     TYPE = 'reserve'
+    PARAMETERS = {
+        'reserve-count': {
+            'type': int,
+            'op': [None],
+            'default': lambda query: query.get('count', 1)
+        },
+        'reserve-whiteboard': {
+            'type': str,
+            'op': [None],
+            'default': lambda query: query.get('whiteboard', '')
+        }
+    }
 
     def __init__(self, machines, reserve_time: int, *args, reserve_purpose: str="", **kwargs):
         super(ReserveTask, self).__init__(machines, *args, **kwargs)

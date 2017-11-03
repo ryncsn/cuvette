@@ -14,6 +14,7 @@ import cuvette.provisioners as provisioners
 
 from cuvette.pool.machine import Machine
 from cuvette.tasks import ProvisionTask, ReserveTask, Tasks, retrive_tasks_from_machine
+from cuvette.tasks import Parameters as TaskParameters
 
 
 Inspectors = inspectors.Inspectors
@@ -26,32 +27,47 @@ Transformers = transformers.Transformers
 logger = logging.getLogger(__name__)
 
 
+PIPELINE_PARAMETERS = {
+    'count': {
+        'type': int,
+        'op': [None],
+        'default': 1,
+    }
+}
+
+
 def setup_parameters():
     """
-    Check and setup parameters that could be accept
+    Check and setup parameters from inspectors, provisioners, and avaliable tasks
+    make sure they are correct, and collect all info about parameters
     """
-    # use InspectorsParameters as the baseline, check and update missing ones from ProvisionersParameters
-    parameters = InspectorsParameters.copy()
-    for provisioner in Provisioners.values():
-        for param_name, param_meta in provisioner.accept.items():
-            inspecter_param_meta = parameters.get(param_name)
-            if not inspecter_param_meta:
-                logger.error('Parameter "%s" of provisioner "%s" is not inspected by any inspector',
-                             param_name, provisioner.name)
-                parameters[param_name] = param_meta.copy()
-                parameters[param_name]['source'] = {
-                    'type': 'provisioner',
-                    'name': param_name
-                }
-            else:
-                KEYS_TO_CHECK = ['type']
-                for key in KEYS_TO_CHECK:
-                    if inspecter_param_meta.get(key) != param_meta.get(key):
-                        logger.error('Different declaration for %s\n'
-                                     'inspectors give:\n %s\n'
-                                     'provisioner %s gives:\n %s\n',
-                                     param_name, inspecter_param_meta, provisioner.name, param_meta)
-                        break
+    pipiline_parameters = PIPELINE_PARAMETERS.copy()
+    inspector_parameters = InspectorsParameters.copy()
+    provisioner_parameters = ProvisionersParameters.copy()
+    task_parameters = TaskParameters.copy()
+
+    # Append inspector_parameters first
+    parameters = inspector_parameters.copy()
+
+    # Check and append provision parameters
+    for param_name, param_meta in provisioner_parameters.items():
+        inspecter_param_meta = inspector_parameters.get(param_name)
+        if not inspecter_param_meta:
+            logger.error('Parameter "%s" of provisioner "%s" is not inspected by any inspector',
+                         param_name, param_meta['source'])
+            parameters[param_name] = param_meta.copy()
+        else:
+            KEYS_TO_CHECK = ['type']
+            for key in KEYS_TO_CHECK:
+                if inspecter_param_meta.get(key) != param_meta.get(key):
+                    logger.error('Different declaration for %s\n'
+                                 'inspectors give:\n %s\n'
+                                 'provisioner %s gives:\n %s\n',
+                                 param_name, inspecter_param_meta, param_meta['source'], param_meta)
+                    break
+
+    parameters.update(task_parameters)
+
     return parameters
 
 
@@ -68,6 +84,12 @@ class PipelineException(Exception):
 class Pipeline(object):
     """
     Do the most common operation, provision, reserve, teardown
+
+    Take a query ->
+        parse with inspectors -> query for valid machine ->
+        parse with transformers -> get cost A ->
+        parse with provisioners -> get cost B ->
+        compare cost -> provision or transform machine
     """
     def __init__(self, request):
         """

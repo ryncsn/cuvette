@@ -13,7 +13,7 @@ class Inspector(InspectorBase):
     """
     Inspect machine's CPU
     """
-    provide = {
+    PARAMETERS = {
         "tags": {
             "description": "Tag the machine for better managing.",
             "type": list,

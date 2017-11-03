@@ -8,7 +8,7 @@ class Inspector(InspectorBase):
     """
     Inspect machine's CPU
     """
-    provide = {
+    PARAMETERS = {
         "device_drivers": {
             "type": list,
             "description": "Devices a machine must have",

@@ -8,7 +8,7 @@ class Inspector(InspectorBase):
     """
     Inspect machine's CPU
     """
-    provide = {
+    PARAMETERS = {
         "memory-total_size": {
             "type": int,
             "description": "Memory size in MB"

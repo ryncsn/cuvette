@@ -12,7 +12,7 @@ class Inspector(InspectorBase):
     """
     Inspect machine's CPU
     """
-    provide = {
+    PARAMETERS = {
         "whiteboard": {
             "description": "Additional string info for each machine.",
             "type": str,

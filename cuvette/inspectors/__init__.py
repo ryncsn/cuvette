@@ -41,11 +41,12 @@ def get_all_parameters():
     Return a dictionary descripting the parameters provided by all inspectors
     """
     ret = {}
-    for inspctor in Inspectors.values():
-        for key, value in inspctor.provide.items():
+    for inspector in Inspectors.values():
+        for key, value in inspector.PARAMETERS.items():
             if key in ret.keys():
                 logger.warn('Found duplicated parameter %s', key)
             ret[key] = value
+            ret[key].setdefault('source', []).append(str(inspector))
     return ret
 
 

@@ -21,7 +21,7 @@ class Inspector(InspectorBase):
     """
     Inspect machine's CPU
     """
-    provide = {
+    PARAMETERS = {
         "numa-node_number": {
             "type": int,
             "description": "How many numa nodes are needed",

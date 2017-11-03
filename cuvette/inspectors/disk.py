@@ -8,7 +8,7 @@ class Inspector(InspectorBase):
     """
     Inspect machine's Disk
     """
-    provide = {
+    PARAMETERS = {
         "disk-total_size": {
             "type": int,
             "description": "Disk total size in MB"
