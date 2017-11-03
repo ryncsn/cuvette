@@ -13,7 +13,7 @@ import cuvette.transformers as transformers
 import cuvette.provisioners as provisioners
 
 from cuvette.pool.machine import Machine
-from cuvette.tasks import ProvisionTask, ReserveTask, Tasks
+from cuvette.tasks import ProvisionTask, ReserveTask, Tasks, retrive_tasks_from_machine
 
 
 Inspectors = inspectors.Inspectors
@@ -142,11 +142,13 @@ class Pipeline(object):
         ret = []
         for machine in machines:
             released = False
-            for task in machine.tasks:
+            for task in await retrive_tasks_from_machine(machine):
                 if task.TYPE == 'reserve':
                     task.cancel()
                     released = True
+                    print("Release task cancelled")
             if released:
+                print("Machine appnede")
                 ret.append(machine)
         return ret
 
@@ -165,12 +167,8 @@ class Pipeline(object):
             raise PipelineException("Can't find any machine to teardown")
         for provisioner, machines in itertools.groupby(machines, lambda x: x['provisioner']):
             for machine in machines:
-                for task_uuid, task_meta in machine.tasks.items():
-                    task = Tasks.get(task_uuid)
-                    if not task:
-                        logger.error('Dead task {} dropped'.format(task_uuid))
-                    else:
-                        task.cancel()
+                for task in await retrive_tasks_from_machine(machine):
+                    task.cancel()
             Provisioners[provisioner].teardown(machines)
             map(machines, lambda x: x.delete())
         return machines

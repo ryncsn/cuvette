@@ -316,7 +316,7 @@ def add_reserve_task(recipe: Element, sanitized_query: dict):
     if reserve_time < 86400:
         reserve_time = 86400
     task_param.set('name', 'RESERVETIME')
-    task_param.set('value', reserve_time * 2)
+    task_param.set('value', str(reserve_time * 2))
 
 
 def fill_boilerplate_recipe(recipe: Element, sanitized_query: dict):

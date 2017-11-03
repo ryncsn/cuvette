@@ -24,7 +24,7 @@ class ReserveTask(BaseTask):
         self.meta['reserve_time'] = reserve_time
         self.meta['reserve_purpose'] = reserve_purpose
 
-    async def on_success(self):
+    async def on_done(self):
         for machine in self.machines:
             await perform_check(machine)
             machine['status'] = 'ready'

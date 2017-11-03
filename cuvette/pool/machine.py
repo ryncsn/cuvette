@@ -75,19 +75,6 @@ class Machine(dict):
     def meta(self):
         return self['meta']
 
-    @property
-    def tasks(self):
-        # TODO: move to Task.from_machine
-        ret = []
-        for task_uuid in list(self['tasks'].keys()).copy():
-            task = Tasks.get(task_uuid)
-            if not task:
-                logger.error('Dropped dead task: {}'.format(task_uuid))
-                self['tasks'].pop(task_uuid)
-            else:
-                ret.append(task)
-        return ret
-
     def __setitem__(self, item, value):
         dict.__setitem__(self, item, value)
         self.self_check()
