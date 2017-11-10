@@ -13,7 +13,7 @@ from .convertor import convert_query_to_beaker_xml
 logger = logging.getLogger(__name__)
 
 
-BEAKER_URL = Settings.BEAKER_URL
+BEAKER_URL = Settings.BEAKER_URL.rstrip('/')
 
 
 async def bkr_command(*args, input=None):
