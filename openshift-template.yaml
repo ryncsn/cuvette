@@ -1,0 +1,126 @@
+---
+kind: Template
+apiVersion: v1
+metadata:
+  name: cuvette
+  annotations:
+    description: Cuvette Server (ephemeral)
+    iconClass: icon-python
+    tags: instant-app,cuvette,machine-pool
+objects:
+- kind: ImageStream
+  apiVersion: v1
+  metadata:
+    name: "${APPLICATION_NAME}"
+    labels:
+      application: "${APPLICATION_NAME}"
+- kind: BuildConfig
+  apiVersion: v1
+  metadata:
+    name: "${APPLICATION_NAME}"
+    labels:
+      application: "${APPLICATION_NAME}"
+  spec:
+    source:
+      type: Git
+      git:
+        uri: "${GIT_URI}"
+        ref: "${GIT_REF}"
+    strategy:
+      type: Docker
+      dockerStrategy:
+        from:
+          kind: ImageStreamTag
+          # Following stream avaliable in libvirt-ci-openshift repo
+          name: provisioner-base:latest
+    output:
+      to:
+        kind: ImageStreamTag
+        name: "${APPLICATION_NAME}:latest"
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChange: {}
+- kind: DeploymentConfig
+  apiVersion: v1
+  metadata:
+    name: "${APPLICATION_NAME}"
+    creationTimestamp:
+    labels:
+      application: "${APPLICATION_NAME}"
+  spec:
+    strategy:
+      type: Rolling
+      rollingParams:
+        updatePeriodSeconds: 1
+        intervalSeconds: 1
+        timeoutSeconds: 600
+      resources: {}
+    triggers:
+    - type: ConfigChange
+    - type: ImageChange
+      imageChangeParams:
+        automatic: true
+        containerNames:
+        - "${APPLICATION_NAME}"
+        from:
+          kind: ImageStreamTag
+          name: "${APPLICATION_NAME}:latest"
+    replicas: 1
+    selector:
+      application: "${APPLICATION_NAME}"
+      deploymentconfig: "${APPLICATION_NAME}"
+    template:
+      metadata:
+        creationTimestamp:
+        labels:
+          application: "${APPLICATION_NAME}"
+          deploymentconfig: "${APPLICATION_NAME}"
+      spec:
+        volumes:
+        - name: "${APPLICATION_NAME}-data"
+          emptyDir: {}
+        containers:
+        - name: "${APPLICATION_NAME}"
+          image: "${APPLICATION_NAME}"
+          env:
+          - name: APP_DB_HOST
+            value: "${APP_DB_HOST}"
+          - name: APP_DB_NAME
+            value: "${APP_DB_NAME}"
+          - name: APP_DB_USER
+            value: "${APP_DB_USER}"
+          - name: APP_DB_PASSWORD
+            value: "${APP_DB_PASSWORD}"
+          resources: {}
+          terminationMessagePath: "/dev/termination-log"
+          imagePullPolicy: Always
+        restartPolicy: Always
+        terminationGracePeriodSeconds: 30
+        dnsPolicy: ClusterFirst
+        securityContext: {}
+  status: {}
+parameters:
+- name: APPLICATION_NAME
+  description: Application Name
+  value: cuvette
+- name: APP_DB_HOST
+  description: MongoDB instance host
+  value: mongodb
+- name: APP_DB_NAME
+  description: Database name
+  value: ''
+- name: APP_DB_USER
+  description: Database user
+  value: ''
+- name: APP_DB_PASSWORD
+  description: Database user's password
+  value: ''
+- name: GIT_URI
+  description: Git Repository
+  value: http://libvirt-dashboard.lab.eng.pek2.redhat.com/gitlab/libvirt-auto/cuvette.git
+- name: GIT_REF
+  description: Git Branch
+  value: rh
+labels:
+  template: cuvette-template
