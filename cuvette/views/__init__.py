@@ -20,7 +20,6 @@ async def index(request):
     This is the view handler for the "/" url.
     Give a server running info
     """
-    # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
     data = {
         'message': 'Cuvette working.',
         'version': '0.0.1'  # TODO
@@ -33,7 +32,6 @@ async def provisioners(request):
     Method: GET
     Return info of provisioners
     """
-    # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
     data = dict([
         (provisioner_name, provisioner.name)
         for provisioner_name, provisioner in Provisioners.items()
@@ -46,7 +44,6 @@ async def parameters(request):
     Method: GET
     Get all parameters of inspectors
     """
-    # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
     data = format_parameters(Parameters)
     return web.json_response(data)
 
@@ -122,7 +119,6 @@ class MachineView(object):
         Method: POST
         Non blocking API to request to provision a machine
         """
-        # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
         query_params = sanitize_query(parse_query(await request.json()), Parameters)
 
         if not await request['magic'].allow_provision(query_params):
@@ -137,7 +133,16 @@ class MachineView(object):
         Method: POST
         Non blocking API to request to force teardown a machine
         """
-        # with the base web.Response type we have to manually set the content type, otherwise text/plain will be used.
         query_params = sanitize_query(parse_query(await request.json()), Parameters)
         machines = await Pipeline(request).teardown(query_params)
+        return web.json_response(machines)
+
+    @staticmethod
+    async def release(request):
+        """
+        Method: POST
+        Non blocking API to request to force release a machine
+        """
+        query_params = sanitize_query(parse_query(await request.json()), Parameters)
+        machines = await Pipeline(request).release(query_params)
         return web.json_response(machines)
