@@ -125,7 +125,7 @@ class MachineView(object):
             return web.json_response({'message': 'no avaliable'}, status=406)
 
         machines = await Pipeline(request).provision(query_params)
-        return web.json_response(machines)
+        return web.json_response([m.to_json() for m in machines])
 
     @staticmethod
     async def teardown(request):
@@ -135,7 +135,7 @@ class MachineView(object):
         """
         query_params = sanitize_query(parse_query(await request.json()), Parameters)
         machines = await Pipeline(request).teardown(query_params)
-        return web.json_response(machines)
+        return web.json_response([m.to_json() for m in machines])
 
     @staticmethod
     async def release(request):
@@ -145,4 +145,4 @@ class MachineView(object):
         """
         query_params = sanitize_query(parse_query(await request.json()), Parameters)
         machines = await Pipeline(request).release(query_params)
-        return web.json_response(machines)
+        return web.json_response([m.to_json() for m in machines])
