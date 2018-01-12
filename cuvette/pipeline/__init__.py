@@ -184,5 +184,5 @@ class Pipeline(object):
                 for task in await retrive_tasks_from_machine(machine):
                     task.cancel()
             Provisioners[provisioner].teardown(machines, query_params)
-            map(machines, lambda x: x.delete())
+            map(lambda x: x.delete(), machines)
         return machines

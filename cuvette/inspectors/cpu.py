@@ -50,9 +50,9 @@ class Inspector(InspectorBase):
             (k.strip(), v.strip()) for k, v in
             [line.split(':', 1) for line in res.stdout.splitlines()]])
 
-        machine['cpu-arch'] = res_dict['Architecture']
-        machine['cpu-vendor'] = res_dict['Vendor ID']
-        machine['cpu-model'] = res_dict['Model']
+        machine.setdefault('cpu-arch', res_dict.get('Architecture', 'Unknown'))
+        machine.setdefault('cpu-vendor', res_dict.get('Vendor ID', 'Unknown'))
+        machine.setdefault('cpu-model', res_dict.get('Model', 'Unknown'))
 
     def hard_filter(self, query):
         if query.get('1g_hugepage'):
