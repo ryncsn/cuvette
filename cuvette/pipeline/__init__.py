@@ -121,23 +121,28 @@ class Pipeline(object):
 
         machines = [Machine(self.request.app['db']) for _ in range(count)]
 
-        # Magic deal with the problem that browser keep sending request
-        # Result in tons of request job
-        await self.request['magic'].pre_provision(machines, query_params)
-        for machine in machines:
-            await machine.save()
+        try:
+            # Magic deal with the problem that browser keep sending request
+            # Result in tons of request job
+            await self.request['magic'].pre_provision(machines, query_params)
+            for machine in machines:
+                await machine.save()
 
-        if min_cost_provisioner:
-            logger.debug('Selected provisioner %s to provision new machine', min_cost_provisioner.NAME)
-            provision_task = ProvisionTask(machines, query_params, min_cost_provisioner)
-            finished, pending = await asyncio.wait([provision_task.run()], timeout=timeout)
-            if finished:
-                return machines
+            if min_cost_provisioner:
+                logger.debug('Selected provisioner %s to provision new machine', min_cost_provisioner.NAME)
+                provision_task = ProvisionTask(machines, query_params, min_cost_provisioner)
+                finished, pending = await asyncio.wait([provision_task.run()], timeout=timeout)
+                if finished:
+                    return machines
+                else:
+                    return machines
             else:
-                return machines
-        else:
-            return {'message': 'Failed to provision a machine, as no one machine matched your need, '
-                    'or there are zero machine.'}
+                raise RuntimeError('Failed to provision a machine, as no one machine matched your need, '
+                                   'or there are zero machine.')
+        except RuntimeError as error:
+            for machine in machines:
+                await machine.delete()
+            raise
 
     async def reserve(self, query_params: dict):
         """

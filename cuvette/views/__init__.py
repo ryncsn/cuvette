@@ -103,7 +103,12 @@ class MachineView(object):
         query_params.setdefault('status', 'ready')
         machines = await Pipeline(request).query(query_params)
         if not machines:
-            machines = await Pipeline(request).provision(query_params, timeout=None)
+            try:
+                machines = await Pipeline(request).provision(query_params, timeout=None)
+            except RuntimeError as error:
+                return web.json_response({
+                    'message': error.message
+                }, status=400)
         if machines:
             machines = await Pipeline(request).reserve(query_params)
         if machines and len(machines):
