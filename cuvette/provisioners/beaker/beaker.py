@@ -42,9 +42,11 @@ async def execute_beaker_job(job_xml: str):
     Submit a job to beaker and wait for it to pass
     """
     success = False
+    task_url = None
+    failure_count = 0
     attempt = 0
     logger.info("Submitting with beaker Job XML:\n%s", job_xml)
-    while not success:
+    while not success and failure_count < 10:
         task_id_output = await bkr_command('job-submit', input=job_xml)
         try:
             # There should be only one job
@@ -77,9 +79,11 @@ async def execute_beaker_job(job_xml: str):
                                 recipe['status'], recipe['result'])
                 if any(info['result'] in ['Warn', 'Fail', 'Panic'] for info in recipes):
                     logger.info("Beaker job %s failed. Resubmit job.", task_url)
+                    failure_count += 1
                     break
                 elif any(info['status'] in ['Aborted'] for info in recipes):
                     logger.info("Beaker job %s finished unexpectedly. " "Resubmit job.", task_url)
+                    failure_count += 1
                     break
                 elif all(info['status'] == 'Running' and info['result'] == 'Pass' for info in recipes):
                     logger.info("Beaker job %s was successfully finished", task_url)
@@ -89,6 +93,8 @@ async def execute_beaker_job(job_xml: str):
             if not success:
                 logger.error("Provisioning aborted abnormally. Cancellling beaker job %s", task_url)
                 await cancel_beaker_job(job_id)
+    if failure_count == 10:
+        raise RuntimeError("Task failed, last task attemped {}".format(task_url))
 
 
 async def parse_machine_info(recipe: str):

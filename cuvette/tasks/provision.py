@@ -42,8 +42,14 @@ class ProvisionTask(BaseTask):
             machine['provisioner'] = self.provisioner.NAME
             machine['status'] = 'preparing'
             await machine.save()
-        await self.provisioner.provision(self.machines, self.query)
-        for machine in self.machines:
-            await perform_check(machine)
-            machine['status'] = 'ready'
-            await machine.save()
+        try:
+            await self.provisioner.provision(self.machines, self.query)
+        except RuntimeError as error:
+            for machine in self.machines:
+                await perform_check(machine)
+                await machine.fail(error.message or 'Unknown failure')
+        else:
+            for machine in self.machines:
+                await perform_check(machine)
+                machine['status'] = 'ready'
+                await machine.save()

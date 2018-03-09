@@ -130,10 +130,12 @@ class Machine(dict):
         await get_main_pool(self._db).delete_one(self._ident())
         await get_failure_pool(self._db).delete_one(self._ident())
 
-    async def fail(self):
+    async def fail(self, message=None):
         """
         Mark this machine as failed
         """
         self['status'] = 'failed'
+        if message:
+            self['message'] = message
         await self.delete()
         await self.save(get_failure_pool(self._db))
