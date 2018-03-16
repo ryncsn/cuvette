@@ -5,6 +5,7 @@ import datetime
 
 from asyncio.subprocess import PIPE, STDOUT
 from cuvette.settings import Settings
+from cuvette.utils.exceptions import ProvisionError
 
 from lxml import etree
 from .convertor import convert_query_to_beaker_xml
@@ -37,64 +38,107 @@ def query_to_xml(sanitized_query: dict) -> str:
     return convert_query_to_beaker_xml(sanitized_query)
 
 
-async def execute_beaker_job(job_xml: str):
+async def fetch_job_recipes(job_id: str):
     """
-    Submit a job to beaker and wait for it to pass
+    Fetch job status, return set of recipes in XML Element format
+    return None on failure
     """
-    success = False
-    task_url = None
-    failure_count = 0
-    attempt = 0
+    recipes = []
+    for _ in range(1440):  # Try to fetch for one day
+        try:
+            active_job_xml_str = await bkr_command('job-results', job_id)
+            active_job_xml = etree.fromstring(active_job_xml_str)
+            recipes = list(map(lambda x: dict(x.attrib), active_job_xml.xpath('//recipe')))
+            if not recipes:
+                raise RuntimeError('bkr job-results command failure, may caused by: beaker is down, network'
+                                   'issue or some interface changes, can\''
+                                   't find valid recipe, xml result is {}'.format(active_job_xml_str))
+            else:
+                break
+        except Exception:
+            if _ != 1440:
+                logger.exception('Error while fetching beaker job-results, keep trying in 120s...')
+                await asyncio.sleep(120)
+            else:
+                raise
+    return recipes
+
+
+def is_recipes_failed(recipes):
+    if any(info['result'] in ['Warn', 'Fail', 'Panic'] for info in recipes):
+        return "Failed"
+    elif any(info['status'] in ['Aborted'] for info in recipes):
+        return "Aborted"
+    elif all(info['status'] == 'Running' and info['result'] == 'Pass' for info in recipes):
+        return False
+
+
+def is_recipes_finished(recipes):
+    if all(info['result'] == 'Pass' for info in recipes):
+        return True
+
+
+async def submit_beaker_job(machines, job_xml: str):
+    """
+    Return job_id on success
+    """
     logger.info("Submitting with beaker Job XML:\n%s", job_xml)
-    while not success and failure_count < 10:
+    try:
         task_id_output = await bkr_command('job-submit', input=job_xml)
-        try:
-            # There should be only one job
-            job_id, = re.match("Submitted: \['(J:[0-9]+)'(?:,)?\]", task_id_output).groups()
-            task_url = "{}/jobs/{}".format(BEAKER_URL, job_id[2:])
-        except (ValueError, TypeError, AttributeError):
-            logger.error('Expecting one job id, got: %s', task_id_output)
-            raise RuntimeError('bkr job-submit command failure {}'.format(task_id_output))
+        job_id = re.match("Submitted: \['(J:[0-9]+)'(?:,)?\]", task_id_output).groups()[0]
+    except (ValueError, TypeError, AttributeError):
+        logger.error('Expecting one job id, got: %s', task_id_output)
+        return None
+    else:
+        for machine in machines:
+            await machine.set('meta.beaker-job_id', job_id)
+        return job_id
+
+
+async def pull_beaker_job(machines, job_id: str):
+    """
+    Keep pulling a beaker job and cancel it if the loop is interupted
+    """
+    pull_count = 0
+    bkr_task_url = "{}/jobs/{}".format(BEAKER_URL, job_id[2:])
+    print("PPPPPPPPPPPPPPPPPPPPp")
+    try:
+        for machine in machines:
+            await machine.set('meta.beaker-task_url', bkr_task_url)
+            await machine.set('meta.beaker-pull_count', pull_count)
+            print("AAAAAAAAAAAAAAAAAAa")
+
+        while True and pull_count < 480:
+            await asyncio.sleep(5)
+            print("BBBBBBBBBBBBBBBBBBB")
+            recipes = await fetch_job_recipes(job_id)
+
+            pull_count += 1
+            for machine in machines:
+                await machine.set('meta.beaker-pull_count', pull_count)
+
+            if is_recipes_failed(recipes):
+                for machine in machines:
+                    await machine.set('meta.beaker-last_failure_reason', is_recipes_failed(recipes))
+                    await machine.set('meta.beaker-last_job_id', is_recipes_failed(job_id))
+                print("FFFFFFFFFFFFFFFFFFFFFFFFF")
+                job_id = None
+                success = False
+                break
+            elif is_recipes_finished(recipes):
+                print("SSSSSSSSSSSSSSSSSSSSSSSS")
+                job_id = None
+                success = True
+                break
+            if job_id is None:
+                break
+    finally:
+        if not success:
+            logger.error("Provisioning aborted abnormally. Cancellling beaker job %s", bkr_task_url)
+            await cancel_beaker_job(job_id)
+            return None
         else:
-            logger.info("Submitted beaker job %s", task_url)
-        try:
-            while True:
-                await asyncio.sleep(55)
-                attempt += 1
-                logger.info("Checking status of job %s (attempt %s)", task_url, attempt)
-                for _ in range(5):  # Try to fetch for multiple times
-                    try:
-                        active_job_xml_str = await bkr_command('job-results', job_id)
-                        active_job_xml = etree.fromstring(active_job_xml_str)
-                        break
-                    except Exception:
-                        await asyncio.sleep(10)
-                recipes = list(map(lambda x: dict(x.attrib), active_job_xml.xpath('//recipe')))
-                if not recipes:
-                    logger.error("Can't find valid recipe: {}".format(active_job_xml_str))
-                    raise RuntimeError('bkr job-results command failure {}'.format(active_job_xml_str))
-                for recipe in recipes:
-                    logger.info("Recipe %s: (system = %s) (status = %s) (result = %s)",
-                                recipe['id'], recipe.get('system', 'queuing'),
-                                recipe['status'], recipe['result'])
-                if any(info['result'] in ['Warn', 'Fail', 'Panic'] for info in recipes):
-                    logger.info("Beaker job %s failed. Resubmit job.", task_url)
-                    failure_count += 1
-                    break
-                elif any(info['status'] in ['Aborted'] for info in recipes):
-                    logger.info("Beaker job %s finished unexpectedly. " "Resubmit job.", task_url)
-                    failure_count += 1
-                    break
-                elif all(info['status'] == 'Running' and info['result'] == 'Pass' for info in recipes):
-                    logger.info("Beaker job %s was successfully finished", task_url)
-                    success = True
-                    return job_id, recipes
-        finally:
-            if not success:
-                logger.error("Provisioning aborted abnormally. Cancellling beaker job %s", task_url)
-                await cancel_beaker_job(job_id)
-    if failure_count == 10:
-        raise RuntimeError("Task failed, last task attemped {}".format(task_url))
+            return recipes
 
 
 async def parse_machine_info(recipe: str):

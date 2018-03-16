@@ -3,7 +3,14 @@ Exceptions for cuvette
 """
 
 
-class ValidateError(Exception):
+class ValidateError(RuntimeError):
+    """
+    Raised when any parameter failed validation
+    """
+    pass
+
+
+class ProvisionError(RuntimeError):
     """
     Raised when any parameter failed validation
     """

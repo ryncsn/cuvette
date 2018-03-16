@@ -5,6 +5,8 @@ Some jobs are synchronous, let them run in executor
 """
 import logging
 import asyncio
+import datetime
+from dateutil.parser import parse
 
 from cuvette.tasks import BaseTask
 from cuvette.inspectors import perform_check
@@ -39,8 +41,11 @@ class ReserveTask(BaseTask):
     def __init__(self, machines, query, *args, **kwargs):
         super(ReserveTask, self).__init__(machines, query, *args, **kwargs)
         self.reserve_duration = self.query['reserve-duration']
-        self.meta['reserve-duration'] = self.reserve_duration
-        self.meta['reserve-whiteboard'] = query['reserve-whiteboard']
+
+    async def on_start(self):
+        for machine in self.machines:
+            await machine.set('reserve-duration', self.reserve_duration)
+            await machine.set('reserve-whilteboard', self.query['reserve-whiteboard'])
 
     async def on_done(self):
         for machine in self.machines:
@@ -50,10 +55,20 @@ class ReserveTask(BaseTask):
 
     async def routine(self):
         for machine in self.machines:
-            machine['status'] = 'reserved'
-            await machine.save()
+            await machine.set('status', 'reserved')
         try:
             await asyncio.sleep(self.reserve_duration)
+        except Exception as error:
+            # Most likely cancelled
+            logger.exception(error)
+
+    async def resume_routine(self):
+        for machine in self.machines:
+            await machine.set('status', 'reserved')
+        try:
+            start_time = parse(machine['start_time'])
+            seconds = (datetime.datetime.now() - start_time).second
+            await asyncio.sleep(seconds)
         except Exception as error:
             # Most likely cancelled
             logger.exception(error)

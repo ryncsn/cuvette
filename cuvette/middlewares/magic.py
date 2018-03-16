@@ -9,7 +9,7 @@ import json
 import uuid
 
 from aiohttp_session import get_session
-from cuvette.pool.machine import Machine
+from cuvette.machine import Machine
 
 
 def random_key():

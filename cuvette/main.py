@@ -14,6 +14,9 @@ from cuvette.settings import Settings
 from cuvette.pool import setup as pool_setup
 from cuvette.views import index, parameters, provisioners, MachineView
 from cuvette.views.callbacks import tear_me_down, describ_me, release_me
+from cuvette.machine import Machine
+from cuvette.mongodb import setup as mongodb_setup
+from cuvette.tasks import resume_task
 
 
 THIS_DIR = Path(__file__).parent
@@ -26,6 +29,21 @@ async def startup(app: web.Application):
     logger.setLevel(logging.INFO)
     logger.info("Info Cuvette starting...")
     pool_setup(asyncio.get_event_loop(), app)
+
+    logger.info("Restore Interupted tasks...")
+
+    tasks = {}
+    for machine in await Machine.find_all(app['db']):
+        # There might be duplicated tasks, as one task may assigned to multiple machines
+        tasks.update(machine['tasks'])
+
+    for uuid, task in tasks.items():
+        machines = await Machine.find_all(app['db'], {
+            "tasks.{}".format(uuid): {
+                "$exists": True
+            }
+        })
+        await resume_task(uuid, task['type'], task['query'], machines)
 
 
 async def cleanup(app: web.Application):
@@ -50,6 +68,11 @@ def setup_routes(app):
     app.router.add_get('/tear_me_down', tear_me_down, name='tear_me_down')
 
 
+def setup_db(app):
+    db = mongodb_setup(app['settings'])
+    app['db'] = db
+
+
 def create_app(loop):
     app = web.Application()
     settings = Settings()
@@ -70,4 +93,6 @@ def create_app(loop):
     app.middlewares.extend(Middlewares)
 
     setup_routes(app)
+    setup_db(app)
+
     return app

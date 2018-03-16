@@ -22,3 +22,5 @@ class InspectTask(BaseTask):
     async def routine(self):
         for machine in self.machines:
             await perform_check(machine)
+
+    resume_routine = routine

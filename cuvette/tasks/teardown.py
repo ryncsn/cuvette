@@ -33,3 +33,5 @@ class TeardownTask(BaseTask):
     async def on_success(self):
         for machine in self.machines:
             await machine.delete()
+
+    resume_routine = routine

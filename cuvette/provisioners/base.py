@@ -27,6 +27,13 @@ class ProvisionerBase(object, metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    async def resume(machines, meta: dict, query: dict):
+        """
+        Resume the provision with given params
+        """
+        pass
+
+    @abc.abstractmethod
     async def provision(machines, meta: dict, query: dict):
         """
         Trigger the provision with given params

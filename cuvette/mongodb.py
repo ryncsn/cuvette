@@ -2,13 +2,8 @@ from motor import motor_asyncio
 
 
 # Currently we have one main pool for active machines
-def get_main_pool(db):
+def get_machine_collection(db):
     return db.machines
-
-
-# A failure pool to reserve failed machines
-def get_failure_pool(db):
-    return db.failed_machines
 
 
 def setup(settings):
@@ -26,6 +21,7 @@ def setup(settings):
 
     db = client[settings.DB_NAME]
 
-    # TODO get_main_pool(db).create_index("hostname", unique=True) uniq or null
+    # TODO get_machine_collection(db).create_index("hostname", unique=True) uniq or null
+    get_machine_collection(db).create_index("magic", unique=True)
 
     return db

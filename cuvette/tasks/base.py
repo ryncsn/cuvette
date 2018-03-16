@@ -5,22 +5,22 @@ Some jobs are synchronous, let them run in executor
 """
 import logging
 import asyncio
-import uuid
 import abc
 
+from uuid import uuid1
 from concurrent.futures import ThreadPoolExecutor
 from cuvette.utils import sanitize_query
 
 logger = logging.getLogger(__name__)
 
-# TODO: in db
-Tasks = {}
+
+Tasks = {}  # Current tasks in ths evenloop
 
 
 class Executor(ThreadPoolExecutor):
     def __init__(self, *args, **kwargs):
         super(Executor, self).__init__(*args, **kwargs)
-        self.uuid = str(uuid.uuid1())
+        self.uuid = str(uuid1())
 
 
 class BaseTask(object, metaclass=abc.ABCMeta):
@@ -34,9 +34,10 @@ class BaseTask(object, metaclass=abc.ABCMeta):
     TYPE = 'base'
     PARAMETERS = {}
 
-    def __init__(self, machines, query: dict=None, loop=None):
+    def __init__(self, machines, query: dict=None, loop=None, uuid=None, context=None):
+        self.uuid = uuid or str(uuid1())
+        self.resume = False
         self.loop = loop or asyncio.get_event_loop()
-        self.uuid = str(uuid.uuid1())
         # Machines this task related to, if task failed, all related machine will be
         # moved to failure pool
         self.machines = machines
@@ -48,30 +49,30 @@ class BaseTask(object, metaclass=abc.ABCMeta):
         self.status = 'pending'
         # the query object that issued this task, could be None for pool scheduled task
         self.query = sanitize_query(query, self.PARAMETERS)
-        # Some metadata that could be used for task routine and reentrant
-        self.meta = {}
 
         Tasks[self.uuid] = self
-        for machine in self.machines:
-            machine['tasks'][self.uuid] = {
-                'type': self.TYPE,
-                'status': self.status,
-                'meta': self.meta,
-            }
+
+    @classmethod
+    async def resume(cls, uuid, query, machines, *args, **kwargs):
+        task = cls(machines, query, *args, **kwargs, uuid=uuid)
+        task.status = 'resume'
+        task.machines = machines
+        task.resume = True
+        Tasks[task.uuid] = task
+        await task._save_task()
+        return task
 
     async def _save_task(self):
         for machine in self.machines:
-            machine['tasks'][self.uuid] = {
+            await machine.set('tasks.{}'.format(self.uuid), {
+                'query': self.query,
                 'type': self.TYPE,
                 'status': self.status,
-                'meta': self.meta,
-            }
-            await machine.save()
+            })
 
     async def _delete_task(self):
         for machine in self.machines:
-            machine['tasks'].pop(self.uuid, None)
-            await machine.save()
+            await machine.unset('tasks.{}'.format(self.uuid))
 
     async def on_done(self):
         logger.info('Task {} Done and removed.'.format(self))
@@ -95,8 +96,7 @@ class BaseTask(object, metaclass=abc.ABCMeta):
         if self.future:
             return self.future.cancel()
         else:
-            pass
-        return True
+            return False
 
     async def run(self):
         """
@@ -107,7 +107,10 @@ class BaseTask(object, metaclass=abc.ABCMeta):
         self.status = 'running'
         await self.on_start()
         try:
-            self.future = asyncio.ensure_future(self.routine())
+            if self.resume:
+                self.future = asyncio.ensure_future(self.resume_routine())
+            else:
+                self.future = asyncio.ensure_future(self.routine())
             await self.future
         except Exception as error:
             await self.on_failure()
@@ -124,6 +127,13 @@ class BaseTask(object, metaclass=abc.ABCMeta):
     async def routine(self, timeout=5):
         """
         The real task routine each subclass should implement.
+        """
+        pass
+
+    @abc.abstractmethod
+    async def resume_routine(self, timeout=5):
+        """
+        Resume the task if it's interrupted by application restart
         """
         pass
 

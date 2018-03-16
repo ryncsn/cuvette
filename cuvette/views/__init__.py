@@ -107,7 +107,7 @@ class MachineView(object):
                 machines = await Pipeline(request).provision(query_params, timeout=None)
             except RuntimeError as error:
                 return web.json_response({
-                    'message': error.message
+                    'message': error
                 }, status=400)
         if machines:
             machines = await Pipeline(request).reserve(query_params)

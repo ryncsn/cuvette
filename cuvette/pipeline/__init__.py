@@ -12,7 +12,7 @@ import cuvette.inspectors as inspectors
 import cuvette.transformers as transformers
 import cuvette.provisioners as provisioners
 
-from cuvette.pool.machine import Machine
+from cuvette.machine import Machine
 from cuvette.tasks import ProvisionTask, ReserveTask, retrive_tasks_from_machine
 from cuvette.tasks import Parameters as TaskParameters
 from cuvette.utils.parameters import check_and_merge_parameter

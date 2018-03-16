@@ -40,3 +40,9 @@ def find_avaliable(query):
                 min_cost_provisioner = provisioner
 
     return min_cost_provisioner
+
+
+def find_by_name(name):
+    for provisioner in Provisioners.values():
+        if provisioner.NAME == name:
+            return provisioner
