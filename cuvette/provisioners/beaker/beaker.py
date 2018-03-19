@@ -65,7 +65,9 @@ async def fetch_job_recipes(job_id: str):
 
 
 def is_recipes_failed(recipes):
-    if any(info['result'] in ['Warn', 'Fail', 'Panic'] for info in recipes):
+    if not recipes:
+        return "Invalid recipes"
+    elif any(info['result'] in ['Warn', 'Fail', 'Panic'] for info in recipes):
         return "Beaker job ended with Warn, Fail or Panic"
     elif any(info['status'] in ['Aborted'] for info in recipes):
         return "Beaker job Aborted"
@@ -107,8 +109,8 @@ async def pull_beaker_job(machines, job_id: str):
             await machine.set('meta.beaker-task_url', bkr_task_url)
             await machine.set('meta.beaker-pull_count', pull_count)
 
-        while True and pull_count < 480:
-            await asyncio.sleep(5)
+        while True and pull_count < 720:  # Pull for two hours
+            await asyncio.sleep(10)
             recipes = await fetch_job_recipes(job_id)
 
             pull_count += 1
@@ -120,15 +122,12 @@ async def pull_beaker_job(machines, job_id: str):
                 for machine in machines:
                     await machine.set('meta.beaker-last_failure_reason', failure)
                     await machine.set('meta.beaker-last_job_id', job_id)
-                job_id = None
-                success = False
-                break
+                return None
             elif is_recipes_finished(recipes):
-                job_id = None
                 success = True
-                break
-            if job_id is None:
-                break
+                return recipes
+            else:
+                pass  # recipes pending, keep pulling
     finally:
         if not success:
             logger.error("Provisioning aborted abnormally. Cancellling beaker job %s", bkr_task_url)

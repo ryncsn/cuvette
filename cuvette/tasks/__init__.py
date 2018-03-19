@@ -38,7 +38,6 @@ async def retrive_tasks_from_machine(machine):
 async def resume_task(task_uuid, task_type, task_query, machines):
     for task in [ProvisionTask, InspectTask, ReserveTask, TeardownTask]:
         if task.TYPE == task_type:
-            print("Provingingingignini")
             task = await task.resume(task_uuid, task_query, machines)
             await asyncio.wait([task.run()], timeout=0)
             return
