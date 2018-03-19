@@ -48,11 +48,9 @@ class Provisioner(ProvisionerBase):
             return 100
 
     async def provision_loop(self, machines, sanitized_query, job_id=None):
-        # job_xml = query_to_xml(sanitized_query)
+        job_xml = query_to_xml(sanitized_query)
         for failure_count in range(10):
-            # job_id = job_id or await submit_beaker_job(job_xml)
-            await asyncio.sleep(10)
-            job_id = "J:2375391"
+            job_id = job_id or await submit_beaker_job(machines, job_xml)
             for machine in machines:
                 await machine.set('meta.beaker-job_id', job_id)
             recipes = await pull_beaker_job(machines, job_id)
