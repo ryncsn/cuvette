@@ -112,18 +112,20 @@ class Pipeline(object):
         if not await self.request['magic'].allow_provision(query_params):
             return []
 
+        min_cost_provisioner = provisioners.find_avaliable(query_params)
+
         count = query_params['count']
-        machines = [Machine(self.request.app['db']) for _ in range(count)]
+
         for inspector in Inspectors.values():
             query_params = inspector.provision_filter(query_params)
+
+        machines = [Machine(self.request.app['db']) for _ in range(count)]
 
         # Magic deal with the problem that browser keep sending request
         # Result in tons of request job
         await self.request['magic'].pre_provision(machines, query_params)
         for machine in machines:
             await machine.save()
-
-        min_cost_provisioner = provisioners.find_avaliable(query_params)
 
         if min_cost_provisioner:
             logger.debug('Selected provisioner %s to provision new machine', min_cost_provisioner.NAME)

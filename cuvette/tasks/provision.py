@@ -34,7 +34,11 @@ class ProvisionTask(BaseTask):
         self.provisioner = provisioner
 
     async def routine(self):
+        # TODO: Better pre parameters passthrou
         for machine in self.machines:
+            for key, value in self.query.items():
+                if isinstance(value, str):
+                    machine[key] = value
             machine['provisioner'] = self.provisioner.NAME
             machine['status'] = 'preparing'
             await machine.save()

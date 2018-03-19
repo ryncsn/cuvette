@@ -77,7 +77,6 @@ class Machine(dict):
 
     def __setitem__(self, item, value):
         dict.__setitem__(self, item, value)
-        self.self_check()
 
     def _ident(self):
         """
