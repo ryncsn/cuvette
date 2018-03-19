@@ -101,14 +101,15 @@ class Machine(UpdateDict):
         else:
             raise RuntimeError("Invalid machine object {}".format(self))
 
-    def self_check(self):
+    async def self_check(self):
         if not self['magic']:
             raise RuntimeError('Invalid machine object without magic')
         if not self['status'] in {'new', 'preparing', 'reserved', 'teardown', 'ready', 'failed', 'deleted'}:
             raise RuntimeError('Invalid machine status {}'.format(self['status']))
         if self['status'] in {'teardown', 'reserved', 'ready', }:
-            if not self['hostname']:
-                raise RuntimeError('Machine in status {} must have field "hostname"'.format(self['status']))
+            if not self.get('hostname'):
+                logger.error('Machine %s status %s must have field "hostname"', self, self['status'])
+                await self.fail("Hostname missing")
 
     def to_json(self):
         ret = {}
@@ -200,7 +201,7 @@ class Machine(UpdateDict):
         """
         Save this machine to a pool
         """
-        self.self_check()
+        await self.self_check()
         if self.get('_id', None) is None:
             self['_id'] = (await get_machine_collection(self.db)
                            .insert_one(self)).inserted_id
@@ -238,11 +239,13 @@ class Machine(UpdateDict):
         self.clean_update_history()
         await get_machine_collection(self.db).delete_one(self._ident())
 
-    async def fail(self, message=None):
+    async def fail(self, error=None):
         """
         Mark this machine as failed
         """
         self['status'] = 'failed'
-        if message:
-            self['failure-message'] = message
+        if error:
+            self['failure-message'] = str(error)
+            if isinstance(error, Exception):
+                logger.exception(error)
         await self.save()

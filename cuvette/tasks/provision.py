@@ -57,7 +57,6 @@ class ProvisionTask(BaseTask):
             await self.provisioner.provision(self.machines, self.query)
         except (ProvisionError, RuntimeError) as error:
             for machine in self.machines:
-                await perform_check(machine)
                 await machine.fail(error.message or 'Unknown failure')
         else:
             for machine in self.machines:
@@ -76,7 +75,6 @@ class ProvisionTask(BaseTask):
             await self.provisioner.resume(self.machines, self.query)
         except (ProvisionError, RuntimeError) as error:
             for machine in self.machines:
-                await perform_check(machine)
                 await machine.fail(error.message or 'Unknown failure')
         else:
             for machine in self.machines:

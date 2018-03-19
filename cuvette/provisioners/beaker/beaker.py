@@ -66,9 +66,9 @@ async def fetch_job_recipes(job_id: str):
 
 def is_recipes_failed(recipes):
     if any(info['result'] in ['Warn', 'Fail', 'Panic'] for info in recipes):
-        return "Failed"
+        return "Beaker job ended with Warn, Fail or Panic"
     elif any(info['status'] in ['Aborted'] for info in recipes):
-        return "Aborted"
+        return "Beaker job Aborted"
     elif all(info['status'] == 'Running' and info['result'] == 'Pass' for info in recipes):
         return False
 
@@ -100,33 +100,30 @@ async def pull_beaker_job(machines, job_id: str):
     Keep pulling a beaker job and cancel it if the loop is interupted
     """
     pull_count = 0
+    success = False
     bkr_task_url = "{}/jobs/{}".format(BEAKER_URL, job_id[2:])
-    print("PPPPPPPPPPPPPPPPPPPPp")
     try:
         for machine in machines:
             await machine.set('meta.beaker-task_url', bkr_task_url)
             await machine.set('meta.beaker-pull_count', pull_count)
-            print("AAAAAAAAAAAAAAAAAAa")
 
         while True and pull_count < 480:
             await asyncio.sleep(5)
-            print("BBBBBBBBBBBBBBBBBBB")
             recipes = await fetch_job_recipes(job_id)
 
             pull_count += 1
             for machine in machines:
                 await machine.set('meta.beaker-pull_count', pull_count)
 
-            if is_recipes_failed(recipes):
+            failure = is_recipes_failed(recipes)
+            if failure:
                 for machine in machines:
-                    await machine.set('meta.beaker-last_failure_reason', is_recipes_failed(recipes))
-                    await machine.set('meta.beaker-last_job_id', is_recipes_failed(job_id))
-                print("FFFFFFFFFFFFFFFFFFFFFFFFF")
+                    await machine.set('meta.beaker-last_failure_reason', failure)
+                    await machine.set('meta.beaker-last_job_id', job_id)
                 job_id = None
                 success = False
                 break
             elif is_recipes_finished(recipes):
-                print("SSSSSSSSSSSSSSSSSSSSSSSS")
                 job_id = None
                 success = True
                 break

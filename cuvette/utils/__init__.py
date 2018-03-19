@@ -260,9 +260,9 @@ def sanitize_query(query: dict, accept_params: dict):
                         raise ValidateError('Unaccptable value type {} for {}'.format(type(value), key))
         elif item is not None:
             if allowed_ops is None or None in allowed_ops:
-                query[key] = item
+                query[key] = allowed_type(item)
             else:  # TODO Support other ops
                 query[key] = {
-                    '$eq': item
+                    '$eq': allowed_type(item)
                 }
     return query

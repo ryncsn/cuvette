@@ -75,22 +75,16 @@ class BaseTask(object, metaclass=abc.ABCMeta):
             await machine.unset('tasks.{}'.format(self.uuid))
 
     async def on_done(self):
-        logger.info('Task {} Done and removed.'.format(self))
+        pass
 
     async def on_start(self):
-        logger.debug('Task {} Started.'.format(self))
-        await self._save_task()
+        pass
 
     async def on_success(self):
-        logger.debug('Task {} Successed.'.format(self))
-        await self._delete_task()
+        pass
 
     async def on_failure(self):
-        logger.exception("Machine {}, Task {}, encounterd exception:".format(self.machines, self))
-        self.cancel()
-        self.status = 'failed'
-        for machine in self.machines:
-            await machine.fail()
+        pass
 
     def cancel(self):
         if self.future:
@@ -105,7 +99,9 @@ class BaseTask(object, metaclass=abc.ABCMeta):
         and mark the machine as failed.
         """
         self.status = 'running'
+        logger.debug('Task {} Started.'.format(self))
         await self.on_start()
+        await self._save_task()
         try:
             if self.resume:
                 self.future = asyncio.ensure_future(self.resume_routine())
@@ -113,15 +109,28 @@ class BaseTask(object, metaclass=abc.ABCMeta):
                 self.future = asyncio.ensure_future(self.routine())
             await self.future
         except Exception as error:
+            logger.exception("Task {}, Machine {} failed, encounterd exception:".format(self, self.machines))
+            self.cancel()
+            self.status = 'failed'
+            for machine in self.machines:
+                await machine.fail()
             await self.on_failure()
         else:
+            logger.debug('Task {} Successed and removed.'.format(self))
             await self.on_success()
+            await self._delete_task()
         finally:
-            if not self.future.done() and not self.future.cancelled():
-                logger.error('Coroutine leaked with {}'.format(self))
-                self.future.cancel()
-            self.future = None
-            await self.on_done()
+            try:
+                if not self.future.done() and not self.future.cancelled():
+                    logger.error('Coroutine leaked with {}'.format(self))
+                    self.future.cancel()
+                self.future = None
+                logger.info('Task {} Done and removed.'.format(self))
+                await self.on_done()
+                await self._delete_task()
+            except Exception as error:
+                for machine in self.machines:
+                    await machine.fail(error)
 
     @abc.abstractmethod
     async def routine(self, timeout=5):

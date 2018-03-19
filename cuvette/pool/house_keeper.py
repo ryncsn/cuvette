@@ -1,7 +1,6 @@
 import asyncio
 import logging
 from datetime import datetime
-from cuvette.tasks.base import Tasks
 from cuvette.tasks.teardown import TeardownTask
 from cuvette.machine import Machine
 
@@ -14,7 +13,7 @@ class CleanExpiredMachine(object):
     main pool to clean expired machines
     """
 
-    INTERVAL = 60
+    INTERVAL = 5
 
     def __init__(self, db):
         self.db = db
@@ -41,7 +40,7 @@ class CleanDeadMachine(object):
     main pool to clean expired machines
     """
 
-    INTERVAL = 60
+    INTERVAL = 5
 
     def __init__(self, db):
         self.db = db
@@ -49,9 +48,7 @@ class CleanDeadMachine(object):
     async def run(self):
         for machine in await Machine.find_all(self.db, {
             'tasks': {},
-            'status': {
-                '$ne': 'ready'
-            }
+            'status': 'preparing'
         }):
             logger.debug('Deleting dead machine: %s', machine)
-            machine.delete()
+            await machine.delete()
