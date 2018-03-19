@@ -52,3 +52,23 @@ class CleanDeadMachine(object):
         }):
             logger.debug('Deleting dead machine: %s', machine)
             await machine.delete()
+
+
+class CleanDeletedMachine(object):
+    """
+    The worker function that keep scanning
+    main pool to clean expired machines
+    """
+
+    INTERVAL = 30
+
+    def __init__(self, db):
+        self.db = db
+
+    async def run(self):
+        for machine in await Machine.find_all(self.db, {
+            'tasks': {},
+            'status': 'deleted'
+        }):
+            logger.debug('Deleting machine: %s', machine)
+            await machine.delete()

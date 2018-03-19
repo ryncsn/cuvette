@@ -241,7 +241,7 @@ def sanitize_query(query: dict, accept_params: dict):
     _query = query.copy()
 
     for key, params in accept_params.items():
-        allowed_type = params.get('type', None)
+        allowed_type = params.get('type', None) or (lambda x: x)
         allowed_ops = params.get('ops', None)
         default = params.get('default', None)
         item = _query.pop(key,

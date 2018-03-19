@@ -21,17 +21,13 @@ async def retrive_tasks_from_machine(machine):
     Retrive cuvette tasks on a machine
     """
     ret = []
-    dropped = False
     for task_uuid in list(machine['tasks'].keys()).copy():
         task = Tasks.get(task_uuid)  # TODO, remove singleton
         if not task:
             logger.error('Dropped dead task: {}'.format(task_uuid))
-            machine['tasks'].pop(task_uuid)
-            dropped = True
+            machine.unset('tasks.{}'.format(task_uuid))
         else:
             ret.append(task)
-    if dropped:
-        await machine.save()
     return ret
 
 

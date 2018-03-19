@@ -52,6 +52,10 @@ class Provisioner(ProvisionerBase):
         recipes = None
         job_id = last_job_id
         for failure_count in range(10):
+            for machine in machines:
+                await machine.refresh()
+                if machine['status'] == 'deleted':
+                    raise ProvisionError("Provision cancelled, machine is deleted")
             job_id = job_id or await submit_beaker_job(machines, job_xml)
             for machine in machines:
                 await machine.set('meta.beaker-job_id', job_id)

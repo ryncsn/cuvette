@@ -47,6 +47,7 @@ class BaseTask(object, metaclass=abc.ABCMeta):
         # Task status, task should be reentrant, but we still keep a status attribute for now
         # for easier tracking, status should be pending, running, success, failed
         self.status = 'pending'
+        self.running = True
         # the query object that issued this task, could be None for pool scheduled task
         self.query = sanitize_query(query, self.PARAMETERS)
 
@@ -87,6 +88,7 @@ class BaseTask(object, metaclass=abc.ABCMeta):
         pass
 
     def cancel(self):
+        self.running = False
         if self.future:
             return self.future.cancel()
         else:

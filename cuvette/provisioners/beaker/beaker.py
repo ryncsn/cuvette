@@ -55,7 +55,7 @@ async def fetch_job_recipes(job_id: str):
                                    't find valid recipe, xml result is {}'.format(active_job_xml_str))
             else:
                 break
-        except Exception:
+        except Exception as error:
             if _ != 1440:
                 logger.exception('Error while fetching beaker job-results, keep trying in 120s...')
                 await asyncio.sleep(120)

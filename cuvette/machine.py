@@ -163,6 +163,7 @@ class Machine(UpdateDict):
             self.update(ret)
         else:
             raise RuntimeError("Machine {} was deleted while accessing".format(self))
+        await self.self_check()
 
     async def unset(self, key):
         """
@@ -190,6 +191,7 @@ class Machine(UpdateDict):
             self.update(ret)
         else:
             raise RuntimeError("Machine {} was deleted while accessing".format(self))
+        await self.self_check()
 
     async def refresh(self):
         machine = await get_machine_collection(self.db).find_one(self._ident())
@@ -231,21 +233,25 @@ class Machine(UpdateDict):
                 )
             self.clean_update_history()
 
+    async def mark_delete(self):
+        """
+        Mark as deleted, when all tasks on the machine is finished,
+        machine will be deleted by house keepers.
+        """
+        await self.set('status', 'deleted')
+
     async def delete(self):
         """
         Delete this machine from all pools
         """
-        self['status'] = 'deleted'
-        self.clean_update_history()
         await get_machine_collection(self.db).delete_one(self._ident())
 
     async def fail(self, error=None):
         """
         Mark this machine as failed
         """
-        self['status'] = 'failed'
+        await self.set('status', 'failed')
         if error:
             self['failure-message'] = str(error)
             if isinstance(error, Exception):
                 logger.exception(error)
-        await self.save()

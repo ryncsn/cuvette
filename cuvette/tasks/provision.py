@@ -50,14 +50,16 @@ class ProvisionTask(BaseTask):
         for machine in self.machines:
             for key, value in self.query.items():
                 if isinstance(value, str):
-                    machine[key] = value
+                    machine.setdefault(key, value)
             await machine.set('provisioner', self.provisioner.NAME)
             await machine.set('status', 'preparing')
         try:
             await self.provisioner.provision(self.machines, self.query)
         except (ProvisionError, RuntimeError) as error:
             for machine in self.machines:
-                await machine.fail(error.message or 'Unknown failure')
+                await machine.refresh()
+                if machine['status'] != 'deleted':
+                    await machine.fail(error or 'Unknown failure')
         else:
             for machine in self.machines:
                 await perform_check(machine)
@@ -67,7 +69,7 @@ class ProvisionTask(BaseTask):
         for machine in self.machines:
             for key, value in self.query.items():
                 if isinstance(value, str):
-                    machine[key] = value
+                    machine.setdefault(key, value)
             await machine.save()
             if machine['status'] != 'preparing':
                 await machine.set('status', 'preparing')
@@ -75,7 +77,9 @@ class ProvisionTask(BaseTask):
             await self.provisioner.resume(self.machines, self.query)
         except (ProvisionError, RuntimeError) as error:
             for machine in self.machines:
-                await machine.fail(error.message or 'Unknown failure')
+                await machine.refresh()
+                if machine['status'] != 'deleted':
+                    await machine.fail(error or 'Unknown failure')
         else:
             for machine in self.machines:
                 await perform_check(machine)

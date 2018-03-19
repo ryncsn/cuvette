@@ -188,8 +188,8 @@ class Pipeline(object):
             raise PipelineException("Can't find any machine to teardown")
         for provisioner, machines in itertools.groupby(machines, lambda x: x['provisioner']):
             for machine in machines:
+                await machine.mark_delete()  # only mark in case some task running
                 for task in await retrive_tasks_from_machine(machine):
                     task.cancel()
-            Provisioners[provisioner].teardown(machines, query_params)
-            map(lambda x: x.delete(), machines)
+            await Provisioners[provisioner].teardown(machines, query_params)
         return machines
