@@ -13,7 +13,7 @@ class CleanExpiredMachine(object):
     main pool to clean expired machines
     """
 
-    INTERVAL = 5
+    INTERVAL = 60
 
     def __init__(self, db):
         self.db = db
@@ -40,7 +40,7 @@ class CleanDeadMachine(object):
     main pool to clean expired machines
     """
 
-    INTERVAL = 5
+    INTERVAL = 3600
 
     def __init__(self, db):
         self.db = db
